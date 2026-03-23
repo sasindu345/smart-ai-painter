@@ -1,0 +1,7 @@
+version: "3.9"
+
+services:
+  frontend:
+    image: smart-ai-painter-frontend
+  backend:
+    image: smart-ai-painter-backend

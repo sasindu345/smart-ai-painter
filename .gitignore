@@ -1,0 +1,25 @@
+# Node
+node_modules/
+.next/
+dist/
+coverage/
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+
+# Build and logs
+*.log
+
+# Infra
+infra/nginx/ssl/
