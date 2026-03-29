@@ -1,11 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import { MoonStar, Sparkles, SunMedium } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export function TopBar() {
   const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   const isDark = resolvedTheme === "dark";
 
   return (
@@ -46,8 +52,16 @@ export function TopBar() {
           onClick={() => setTheme(isDark ? "light" : "dark")}
           className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
         >
-          {isDark ? <SunMedium size={16} /> : <MoonStar size={16} />}
-          {isDark ? "Light" : "Dark"}
+          {mounted ? (
+            isDark ? (
+              <SunMedium size={16} />
+            ) : (
+              <MoonStar size={16} />
+            )
+          ) : (
+            <MoonStar size={16} />
+          )}
+          {mounted ? (isDark ? "Light" : "Dark") : "Dark"}
         </button>
       </div>
     </header>
