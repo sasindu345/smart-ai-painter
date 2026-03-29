@@ -1,3 +1,5 @@
+import { CanvasWorkspaceShell } from "@/components/canvas/CanvasWorkspaceShell";
+
 export default function CanvasPage() {
-  return <main>Canvas workspace</main>;
+  return <CanvasWorkspaceShell />;
 }

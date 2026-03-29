@@ -2,7 +2,11 @@
 
 import { create } from "zustand";
 
-import type { CanvasAction, CanvasState } from "@/types/canvas";
+import {
+  PAGE_PRESET_SIZES,
+  type CanvasAction,
+  type CanvasState,
+} from "@/types/canvas";
 
 const initialState: CanvasState = {
   activeTool: "brush",
@@ -14,6 +18,11 @@ const initialState: CanvasState = {
   canRedo: false,
   isDirty: false,
   isEmpty: true,
+  zoomLevel: 1,
+  pagePreset: "landscape",
+  pageWidth: PAGE_PRESET_SIZES.landscape.width,
+  pageHeight: PAGE_PRESET_SIZES.landscape.height,
+  isResultDrawerOpen: false,
 };
 
 export const useCanvasStore = create<CanvasState & CanvasAction>((set) => ({
@@ -21,6 +30,24 @@ export const useCanvasStore = create<CanvasState & CanvasAction>((set) => ({
   setTool: (activeTool) => set({ activeTool }),
   setColor: (brushColor) => set({ brushColor }),
   setSize: (brushSize) => set({ brushSize }),
+  setZoomLevel: (zoomLevel) => set({ zoomLevel }),
+  setPagePreset: (pagePreset) =>
+    set({
+      pagePreset,
+      pageWidth: PAGE_PRESET_SIZES[pagePreset].width,
+      pageHeight: PAGE_PRESET_SIZES[pagePreset].height,
+    }),
+  setCustomPageSize: (pageWidth, pageHeight) =>
+    set({
+      pagePreset: "custom",
+      pageWidth,
+      pageHeight,
+    }),
+  toggleResultDrawer: () =>
+    set((state) => ({
+      isResultDrawerOpen: !state.isResultDrawerOpen,
+    })),
+  setResultDrawerOpen: (isResultDrawerOpen) => set({ isResultDrawerOpen }),
   pushHistory: (snapshot) =>
     set((state) => {
       const nextHistory = state.history.slice(0, state.historyIndex + 1);

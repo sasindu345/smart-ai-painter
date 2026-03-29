@@ -13,7 +13,7 @@ export function ResultPanel() {
       </div>
       <EmptyState
         title="Generated artwork will appear here"
-        description="Phase 1 focuses on a stable drawing experience. In Phase 2 this panel becomes the image generation workspace."
+        description="Phase 1 keeps the canvas full width, so this preview now opens in a drawer. In Phase 2 this panel becomes the AI generation and review workspace."
       />
     </section>
   );

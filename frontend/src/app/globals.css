@@ -11,7 +11,7 @@
   --border: rgba(20, 17, 15, 0.12);
   --accent: #ff6b57;
   --accent-foreground: #fff7f4;
-  --canvas: #fffdf8;
+  --canvas: #ffffff;
 }
 
 .dark {
@@ -23,7 +23,7 @@
   --border: rgba(255, 244, 233, 0.1);
   --accent: #7dd3fc;
   --accent-foreground: #06263a;
-  --canvas: #111318;
+  --canvas: #ffffff;
 }
 
 * {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { MoonStar, Sparkles, SunMedium } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -9,8 +10,8 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color:var(--panel)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-4 px-5 py-4">
+        <Link href="/" className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg shadow-black/15">
             <Sparkles size={18} />
           </div>
@@ -22,12 +23,22 @@ export function TopBar() {
               Canvas Studio
             </h1>
           </div>
-        </div>
+        </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-[var(--muted-foreground)] md:flex">
-          <span>Canvas</span>
+          <Link
+            href="/canvas"
+            className="transition hover:text-[var(--accent)]"
+          >
+            Canvas
+          </Link>
           <span>Generate</span>
-          <span>Gallery</span>
+          <Link
+            href="/gallery"
+            className="transition hover:text-[var(--accent)]"
+          >
+            Gallery
+          </Link>
         </nav>
 
         <button
