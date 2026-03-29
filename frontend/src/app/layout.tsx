@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { QueryProvider } from "@/components/shared/QueryProvider";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 
 import "./globals.css";
@@ -10,9 +11,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {children}
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );
