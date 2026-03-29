@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
-import { Canvas, PencilBrush } from "fabric";
+import { Canvas, Path, PencilBrush } from "fabric";
 
 import { useCanvasStore } from "@/store/canvasStore";
 
 type UseCanvasReturn = {
+  surfaceRef: RefObject<HTMLDivElement>;
   canvasRef: RefObject<HTMLCanvasElement>;
   undo: () => void;
   redo: () => void;
@@ -13,6 +14,7 @@ type UseCanvasReturn = {
 };
 
 export const useCanvas = (): UseCanvasReturn => {
+  const surfaceRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<Canvas | null>(null);
   const blankSnapshotRef = useRef<string>("");
@@ -47,9 +49,12 @@ export const useCanvas = (): UseCanvasReturn => {
 
   const updateBrush = useCallback(() => {
     const canvas = fabricRef.current;
-    if (!canvas || !canvas.freeDrawingBrush) {
+    if (!canvas) {
       return;
     }
+
+    canvas.isDrawingMode = true;
+    canvas.freeDrawingBrush ??= new PencilBrush(canvas);
 
     const brush = canvas.freeDrawingBrush as PencilBrush & {
       globalCompositeOperation?: GlobalCompositeOperation;
@@ -63,6 +68,9 @@ export const useCanvas = (): UseCanvasReturn => {
       brush.color = color;
       brush.globalCompositeOperation = "source-over";
     }
+
+    canvas.contextTop.globalCompositeOperation =
+      brush.globalCompositeOperation ?? "source-over";
   }, [color, size, tool]);
 
   const saveSnapshot = useCallback(() => {
@@ -86,12 +94,18 @@ export const useCanvas = (): UseCanvasReturn => {
     saveSnapshotRef.current = saveSnapshot;
   }, [saveSnapshot]);
 
+  const updateBrushRef = useRef(updateBrush);
+  useEffect(() => {
+    updateBrushRef.current = updateBrush;
+  }, [updateBrush]);
+
   const loadSnapshot = useCallback(
     async (snapshot: string, nextIndex: number, nextHistoryLength: number) => {
       const canvas = fabricRef.current;
       if (!canvas) return;
       await canvas.loadFromJSON(snapshot);
-      canvas.renderAll();
+      updateBrushRef.current();
+      canvas.requestRenderAll();
       syncCanvasStatus(canvas, nextIndex, nextHistoryLength);
     },
     [syncCanvasStatus],
@@ -99,7 +113,7 @@ export const useCanvas = (): UseCanvasReturn => {
 
   // Canvas initialization — runs once on mount
   useEffect(() => {
-    if (!canvasRef.current || fabricRef.current) {
+    if (!canvasRef.current || !surfaceRef.current || fabricRef.current) {
       return;
     }
 
@@ -111,17 +125,50 @@ export const useCanvas = (): UseCanvasReturn => {
     fabricRef.current = canvas;
 
     const resizeCanvas = () => {
-      const parent = canvasRef.current?.parentElement;
-      if (!parent) return;
-      canvas.setWidth(parent.clientWidth);
-      canvas.setHeight(parent.clientHeight);
-      canvas.renderAll();
+      const surface = surfaceRef.current;
+      if (!surface) return;
+
+      const nextWidth = Math.max(Math.floor(surface.clientWidth), 1);
+      const nextHeight = Math.max(Math.floor(surface.clientHeight), 1);
+
+      if (
+        canvas.getWidth() === nextWidth &&
+        canvas.getHeight() === nextHeight
+      ) {
+        return;
+      }
+
+      canvas.setDimensions({
+        width: nextWidth,
+        height: nextHeight,
+      });
+      canvas.requestRenderAll();
     };
 
+    updateBrushRef.current();
     resizeCanvas();
+
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => resizeCanvas())
+        : null;
+
+    resizeObserver?.observe(surfaceRef.current);
     window.addEventListener("resize", resizeCanvas);
 
     const handlePathCreated = () => saveSnapshotRef.current();
+    const handleBeforePathCreated = ({ path }: { path: Path }) => {
+      const brush = canvas.freeDrawingBrush as PencilBrush & {
+        globalCompositeOperation?: GlobalCompositeOperation;
+      };
+
+      path.set(
+        "globalCompositeOperation",
+        brush.globalCompositeOperation ?? "source-over",
+      );
+    };
+
+    canvas.on("before:path:created", handleBeforePathCreated);
     canvas.on("path:created", handlePathCreated);
 
     const blankSnapshot = JSON.stringify(canvas.toJSON());
@@ -137,7 +184,9 @@ export const useCanvas = (): UseCanvasReturn => {
     });
 
     return () => {
+      resizeObserver?.disconnect();
       window.removeEventListener("resize", resizeCanvas);
+      canvas.off("before:path:created", handleBeforePathCreated);
       canvas.off("path:created", handlePathCreated);
       canvas.dispose();
       fabricRef.current = null;
@@ -204,6 +253,7 @@ export const useCanvas = (): UseCanvasReturn => {
     if (!canvas) return;
     canvas.clear();
     canvas.backgroundColor = "";
+    updateBrushRef.current();
     canvas.requestRenderAll();
     clearHistory(blankSnapshotRef.current || serializeCanvas(canvas));
     syncCanvasStatus(canvas, 0, 1);
@@ -211,6 +261,7 @@ export const useCanvas = (): UseCanvasReturn => {
 
   return useMemo(
     () => ({
+      surfaceRef,
       canvasRef,
       undo,
       redo,

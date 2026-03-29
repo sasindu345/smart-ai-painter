@@ -8,7 +8,7 @@ import { useCanvasStore } from "@/store/canvasStore";
 
 export function SketchCanvas() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const { canvasRef, undo, redo, clear } = useCanvas();
+  const { surfaceRef, canvasRef, undo, redo, clear } = useCanvas();
   const canRedo = useCanvasStore((state) => state.canRedo);
   const canUndo = useCanvasStore((state) => state.canUndo);
   const isEmpty = useCanvasStore((state) => state.isEmpty);
@@ -64,9 +64,12 @@ export function SketchCanvas() {
         </span>
       </div>
 
-      <div className="canvas-surface relative min-h-[540px] overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--canvas)]">
+      <div
+        ref={surfaceRef}
+        className="canvas-surface relative min-h-[540px] overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--canvas)]"
+      >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_30%),linear-gradient(180deg,transparent,rgba(15,23,42,0.04))]" />
-        <canvas ref={canvasRef} className="relative h-full w-full" />
+        <canvas ref={canvasRef} className="block" />
       </div>
 
       {isConfirmOpen ? (
