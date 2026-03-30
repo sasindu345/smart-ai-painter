@@ -4,3 +4,4 @@ pydantic
 pydantic-settings
 httpx
 Pillow
+huggingface_hub

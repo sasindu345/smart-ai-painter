@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     hf_model_id: str = "stabilityai/stable-diffusion-xl-base-1.0"
     hf_timeout_seconds: int = 120
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
 
 settings = Settings()

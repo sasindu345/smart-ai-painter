@@ -1,11 +1,17 @@
 import base64
 import io
+import os
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from PIL import Image
 
+# Force mock mode for tests regardless of .env
+os.environ["AI_MODE"] = "mock"
+
 from app.main import app
+from app.api.v1.routes import generate as generate_route
 
 client = TestClient(app)
 
@@ -68,6 +74,21 @@ class TestGenerateEndpoint:
         )
         assert resp.status_code == 422  # Pydantic validation error
 
+    def test_prompt_over_200_chars_rejected(self):
+        resp = client.post(
+            "/api/v1/generate/",
+            json={
+                "sketch_base64": _make_sketch_b64(),
+                "prompt": "x" * 201,
+                "style": "realistic",
+                "strength": 0.5,
+                "page_preset": "square",
+                "page_width": 1024,
+                "page_height": 1024,
+            },
+        )
+        assert resp.status_code == 422
+
     def test_strength_out_of_range_rejected(self):
         resp = client.post(
             "/api/v1/generate/",
@@ -105,6 +126,28 @@ class TestGenerateEndpoint:
         )
         assert resp.status_code == 400
         assert "blank" in resp.json()["detail"].lower()
+
+    def test_provider_failure_maps_to_user_friendly_error(self, monkeypatch):
+        async def _fail(**_kwargs):
+            raise HTTPException(status_code=502, detail="AI provider timed out. Try again.")
+
+        monkeypatch.setattr(generate_route, "generate_with_ai", _fail)
+
+        resp = client.post(
+            "/api/v1/generate/",
+            json={
+                "sketch_base64": _make_sketch_b64(),
+                "prompt": "a sunset",
+                "style": "realistic",
+                "strength": 0.65,
+                "page_preset": "landscape",
+                "page_width": 1600,
+                "page_height": 900,
+            },
+        )
+
+        assert resp.status_code == 502
+        assert resp.json()["detail"] == "AI provider timed out. Try again."
 
 
 class TestHealthEndpoint:
