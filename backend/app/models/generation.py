@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 class GenerateRequest(BaseModel):
     sketch_base64: str
-    prompt: str = Field(min_length=1, max_length=500)
+    prompt: str = Field(min_length=1, max_length=200)
     style: str = "realistic"
     strength: float = Field(default=0.65, ge=0, le=1)
     page_preset: str = "landscape"

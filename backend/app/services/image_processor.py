@@ -40,12 +40,7 @@ def normalize_image(
     page_height: int,
     max_dim: int = MAX_DIMENSION,
 ) -> Image.Image:
-    """Resize image preserving aspect ratio, pad with white background.
-
-    The image is scaled so its longest side fits within `max_dim`, then centered
-    on a white canvas matching the scaled aspect ratio.  Portrait, landscape,
-    and square inputs are all handled without distortion.
-    """
+    """Resize image preserving aspect ratio and pad to the requested page ratio."""
     # Convert to RGB (drop alpha channel, fill transparent areas with white)
     if img.mode == "RGBA":
         background = Image.new("RGB", img.size, (255, 255, 255))
@@ -54,22 +49,25 @@ def normalize_image(
     elif img.mode != "RGB":
         img = img.convert("RGB")
 
-    # Scale so the longest side fits within max_dim
-    aspect = page_width / page_height
-    if aspect >= 1:
-        # Landscape or square
+    page_aspect = page_width / page_height
+    if page_aspect >= 1:
         target_w = max_dim
-        target_h = int(max_dim / aspect)
+        target_h = max(1, round(max_dim / page_aspect))
     else:
-        # Portrait
         target_h = max_dim
-        target_w = int(max_dim * aspect)
+        target_w = max(1, round(max_dim * page_aspect))
 
-    img_resized = img.resize((target_w, target_h), Image.LANCZOS)
+    source_w, source_h = img.size
+    scale = min(target_w / source_w, target_h / source_h)
+    resized_w = max(1, round(source_w * scale))
+    resized_h = max(1, round(source_h * scale))
 
-    # Center on a white canvas of the target size
+    img_resized = img.resize((resized_w, resized_h), Image.LANCZOS)
+
     canvas = Image.new("RGB", (target_w, target_h), (255, 255, 255))
-    canvas.paste(img_resized, (0, 0))
+    offset_x = (target_w - resized_w) // 2
+    offset_y = (target_h - resized_h) // 2
+    canvas.paste(img_resized, (offset_x, offset_y))
     return canvas
 
 

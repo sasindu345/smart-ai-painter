@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { GenerateButton } from "@/components/generate/GenerateButton";
 import { PromptInput } from "@/components/generate/PromptInput";
@@ -22,6 +22,7 @@ export function ResultPanel() {
   const [strength, setStrength] = useState(65);
   const [variations, setVariations] = useState<string[]>([]);
   const [activeVariation, setActiveVariation] = useState(0);
+  const variationsRef = useRef<string[]>([]);
 
   const isEmpty = useCanvasStore((s) => s.isEmpty);
   const pagePreset = useCanvasStore((s) => s.pagePreset);
@@ -31,6 +32,10 @@ export function ResultPanel() {
   const { generate, data, isLoading, isError, error, reset } = useGenerate();
 
   const canGenerate = !isEmpty && prompt.trim().length > 0;
+
+  useEffect(() => {
+    variationsRef.current = variations;
+  }, [variations]);
 
   function handleGenerate() {
     // Get canvas element and export as base64
@@ -52,12 +57,11 @@ export function ResultPanel() {
       },
       {
         onSuccess: (result) => {
-          setVariations((prev) => {
-            const next = [...prev, result.image_base64];
-            // Keep last 3 variations
-            return next.slice(-3);
-          });
-          setActiveVariation(Math.min(variations.length, 2));
+          const next = [...variationsRef.current, result.image_base64].slice(
+            -3,
+          );
+          setVariations(next);
+          setActiveVariation(next.length - 1);
         },
       },
     );

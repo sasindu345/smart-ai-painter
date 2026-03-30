@@ -3,6 +3,7 @@ import io
 
 import pytest
 from PIL import Image
+from PIL.ImageChops import difference
 
 from app.services.image_processor import (
     decode_base64_image,
@@ -70,6 +71,27 @@ class TestNormalizeImage:
         img = Image.new("RGBA", (200, 200), (255, 0, 0, 128))
         result = normalize_image(img, page_width=200, page_height=200)
         assert result.mode == "RGB"
+
+    def test_mismatched_aspect_ratio_is_padded_not_stretched(self):
+        img = Image.new("RGB", (800, 800), "white")
+        for y in range(800):
+            img.putpixel((400, y), (0, 0, 0))
+
+        result = normalize_image(img, page_width=1600, page_height=900)
+
+        assert result.size == (1024, 576)
+        center_pixel = result.getpixel((512, 288))
+        assert all(channel < 200 for channel in center_pixel)
+        assert result.getpixel((0, 0)) == (255, 255, 255)
+
+    def test_padding_keeps_source_content_centered(self):
+        img = Image.new("RGB", (200, 400), "blue")
+
+        result = normalize_image(img, page_width=1600, page_height=900)
+
+        content = Image.new("RGB", result.size, "white")
+        content.paste(Image.new("RGB", (288, 576), "blue"), (368, 0))
+        assert difference(result, content).getbbox() is None
 
 
 class TestEncodeImageBase64:
