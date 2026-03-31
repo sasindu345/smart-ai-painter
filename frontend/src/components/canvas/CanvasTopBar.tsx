@@ -1,8 +1,22 @@
 "use client";
 
-import { Eye, Minus, Plus, RotateCcw, RotateCw, Trash2 } from "lucide-react";
+import { useState } from "react";
+
+import {
+  Check,
+  Eye,
+  Loader2,
+  Minus,
+  Plus,
+  RotateCcw,
+  RotateCw,
+  Save,
+  Trash2,
+} from "lucide-react";
 
 import type { UseCanvasReturn } from "@/hooks/useCanvas";
+import { useAuth } from "@/hooks/useAuth";
+import { useSketches } from "@/hooks/useSketches";
 import { useCanvasStore } from "@/store/canvasStore";
 import { PAGE_PRESET_SIZES } from "@/types/canvas";
 
@@ -51,12 +65,47 @@ export function CanvasTopBar({
     (state) => state.toggleResultDrawer,
   );
 
+  const { user } = useAuth();
+  const { saveSketch, isSaving, isSaveSuccess, resetSave } = useSketches();
+  const [saveMessage, setSaveMessage] = useState("");
+
   const supportsStrokeControls =
     activeTool === "brush" ||
     activeTool === "eraser" ||
     activeTool === "rect" ||
     activeTool === "ellipse" ||
     activeTool === "line";
+
+  function handleSaveSketch() {
+    const canvasEl = document.querySelector("canvas");
+    if (!canvasEl) return;
+
+    const dataUrl = canvasEl.toDataURL("image/png");
+    const base64 = dataUrl.split(",")[1];
+
+    saveSketch(
+      {
+        title: `Sketch ${new Date().toLocaleDateString()}`,
+        image_base64: base64,
+        page_preset: pagePreset,
+        page_width: useCanvasStore.getState().pageWidth,
+        page_height: useCanvasStore.getState().pageHeight,
+      },
+      {
+        onSuccess: () => {
+          setSaveMessage("Saved!");
+          setTimeout(() => {
+            setSaveMessage("");
+            resetSave();
+          }, 2000);
+        },
+        onError: () => {
+          setSaveMessage("Failed to save");
+          setTimeout(() => setSaveMessage(""), 3000);
+        },
+      },
+    );
+  }
 
   return (
     <section className="mb-4 rounded-[30px] border border-[var(--border)] bg-[var(--panel)] p-4 shadow-[0_22px_80px_rgba(15,23,42,0.08)]">
@@ -111,6 +160,23 @@ export function CanvasTopBar({
               <Trash2 size={16} />
               New Page
             </button>
+            {user && (
+              <button
+                type="button"
+                onClick={handleSaveSketch}
+                disabled={isEmpty || isSaving}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition enabled:hover:border-green-500 enabled:hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-45 dark:enabled:hover:text-green-400"
+              >
+                {isSaving ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : isSaveSuccess || saveMessage === "Saved!" ? (
+                  <Check size={16} className="text-green-500" />
+                ) : (
+                  <Save size={16} />
+                )}
+                {isSaving ? "Saving…" : saveMessage || "Save Sketch"}
+              </button>
+            )}
             <button
               type="button"
               onClick={toggleResultDrawer}
