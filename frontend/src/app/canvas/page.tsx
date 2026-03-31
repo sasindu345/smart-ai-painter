@@ -1,5 +1,11 @@
+import { Suspense } from "react";
+
 import { CanvasWorkspaceShell } from "@/components/canvas/CanvasWorkspaceShell";
 
 export default function CanvasPage() {
-  return <CanvasWorkspaceShell />;
+  return (
+    <Suspense>
+      <CanvasWorkspaceShell />
+    </Suspense>
+  );
 }

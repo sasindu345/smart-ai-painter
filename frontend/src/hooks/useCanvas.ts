@@ -5,6 +5,7 @@ import {
   ActiveSelection,
   Canvas,
   Ellipse,
+  FabricImage,
   Line,
   Path,
   PencilBrush,
@@ -78,6 +79,7 @@ export type UseCanvasReturn = {
   zoomIn: () => void;
   zoomOut: () => void;
   resetZoom: () => void;
+  loadSketchImage: (imageUrl: string) => Promise<void>;
 };
 
 type ShapeObject = Rect | Ellipse | Line;
@@ -659,6 +661,48 @@ export const useCanvas = (): UseCanvasReturn => {
     syncCanvasStatus(canvas, 0, 1);
   }, [clearHistory, serializeCanvas, syncCanvasStatus]);
 
+  const loadSketchImage = useCallback(
+    async (imageUrl: string) => {
+      const canvas = fabricRef.current;
+      if (!canvas) return;
+
+      const img = await FabricImage.fromURL(imageUrl, {
+        crossOrigin: "anonymous",
+      });
+
+      canvas.clear();
+      canvas.backgroundColor = "#ffffff";
+
+      // Scale image to fit the canvas while preserving aspect ratio
+      const canvasWidth = canvas.getWidth();
+      const canvasHeight = canvas.getHeight();
+      const scale = Math.min(
+        canvasWidth / (img.width ?? canvasWidth),
+        canvasHeight / (img.height ?? canvasHeight),
+      );
+
+      img.set({
+        scaleX: scale,
+        scaleY: scale,
+        left: (canvasWidth - (img.width ?? 0) * scale) / 2,
+        top: (canvasHeight - (img.height ?? 0) * scale) / 2,
+        selectable: false,
+        evented: false,
+      });
+
+      canvas.add(img);
+      updateBrushRef.current();
+      updateObjectInteractivityRef.current();
+      canvas.requestRenderAll();
+
+      // Save as initial history state
+      const snapshot = serializeCanvas(canvas);
+      clearHistory(snapshot);
+      syncCanvasStatus(canvas, 0, 1);
+    },
+    [clearHistory, serializeCanvas, syncCanvasStatus],
+  );
+
   return useMemo(
     () => ({
       surfaceRef,
@@ -670,7 +714,17 @@ export const useCanvas = (): UseCanvasReturn => {
       zoomIn,
       zoomOut,
       resetZoom,
+      loadSketchImage,
     }),
-    [clear, deleteSelected, redo, resetZoom, undo, zoomIn, zoomOut],
+    [
+      clear,
+      deleteSelected,
+      loadSketchImage,
+      redo,
+      resetZoom,
+      undo,
+      zoomIn,
+      zoomOut,
+    ],
   );
 };
