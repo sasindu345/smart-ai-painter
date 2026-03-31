@@ -85,7 +85,7 @@ def is_blank_image(img: Image.Image, threshold: float = 0.99) -> bool:
     (RGB values all above 250).
     """
     rgb = img.convert("RGB")
-    pixels = list(rgb.get_flattened_data())
+    pixels = list(rgb.getdata())
     total = len(pixels)
     white_count = sum(1 for r, g, b in pixels if r > 250 and g > 250 and b > 250)
     return (white_count / total) > threshold

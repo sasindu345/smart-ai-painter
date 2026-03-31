@@ -26,12 +26,14 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
 
+  const { headers: optionHeaders, ...restOptions } = options;
+
   const res = await fetch(url, {
+    ...restOptions,
     headers: {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...optionHeaders,
     },
-    ...options,
   });
 
   if (!res.ok) {
