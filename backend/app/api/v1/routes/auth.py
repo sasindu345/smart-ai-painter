@@ -1,8 +1,14 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
 
-@router.post("/login")
-async def login() -> dict[str, str]:
-    return {"message": "Login endpoint placeholder"}
+@router.get("/me")
+async def get_me(user: dict = Depends(get_current_user)) -> dict:
+    """Return the current authenticated user's info."""
+    return {
+        "id": user.get("sub"),
+        "email": user.get("email"),
+    }
