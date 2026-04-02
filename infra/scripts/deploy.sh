@@ -22,6 +22,8 @@ fi
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans
+# Nginx caches upstream container IPs at startup, so restart it after app services are recreated.
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart nginx
 docker image prune -f
 
 echo "Deployment completed successfully."
