@@ -6,8 +6,17 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 let client: SupabaseClient | null = null;
 
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function createSupabaseBrowserClient(): SupabaseClient {
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!isValidHttpUrl(supabaseUrl) || !supabaseAnonKey) {
     // Return a dummy client that won't crash during build/SSG
     // Auth features simply won't work until env vars are configured
     return {
