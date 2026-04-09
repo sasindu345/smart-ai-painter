@@ -55,6 +55,32 @@ async def get_gallery(
     )
 
 
+@router.get("/public/{generation_id}", response_model=GalleryItem)
+async def get_public_generation(generation_id: str) -> GalleryItem:
+    """Fetch a single generation for public sharing (Open Graph metadata).
+
+    This endpoint returns metadata for a generation without requiring auth so
+    that share links can render rich previews. It only returns the publicly
+    safe fields (id, prompt, style, image_url, created_at).
+    """
+    client = _get_supabase()
+    result = (
+        client.table("generations")
+        .select("id, prompt, style, image_url, created_at")
+        .eq("id", generation_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Generation not found",
+        )
+
+    return GalleryItem(**result.data[0])
+
+
 @router.delete("/{generation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_generation(
     generation_id: str,
