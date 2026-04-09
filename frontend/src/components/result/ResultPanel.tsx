@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorToast } from "@/components/shared/ErrorToast";
 import { LoadingBar } from "@/components/shared/LoadingBar";
 import { useGenerate } from "@/hooks/useGenerate";
+import { usePromptHistory } from "@/hooks/usePromptHistory";
 import { useCanvasStore } from "@/store/canvasStore";
 import type { ArtStyle } from "@/types/generate";
 
@@ -30,6 +31,7 @@ export function ResultPanel() {
   const pageHeight = useCanvasStore((s) => s.pageHeight);
 
   const { generate, data, isLoading, isError, error, reset } = useGenerate();
+  const { addPrompt } = usePromptHistory();
 
   const canGenerate = !isEmpty && prompt.trim().length > 0;
 
@@ -45,10 +47,12 @@ export function ResultPanel() {
     const dataUrl = canvasEl.toDataURL("image/png");
     const base64 = dataUrl.split(",")[1];
 
+    const trimmedPrompt = prompt.trim();
+
     generate(
       {
         sketch_base64: base64,
-        prompt: prompt.trim(),
+        prompt: trimmedPrompt,
         style,
         strength: strength / 100,
         page_preset: pagePreset,
@@ -57,6 +61,7 @@ export function ResultPanel() {
       },
       {
         onSuccess: (result) => {
+          addPrompt(trimmedPrompt);
           const next = [...variationsRef.current, result.image_base64].slice(
             -3,
           );
@@ -95,7 +100,11 @@ export function ResultPanel() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="space-y-2 rounded-[28px] border border-[var(--border)] bg-[var(--panel-elevated)] p-4">
+        <div
+          role="status"
+          aria-live="polite"
+          className="space-y-2 rounded-[28px] border border-[var(--border)] bg-[var(--panel-elevated)] p-4"
+        >
           <LoadingBar />
           <p className="text-center text-xs text-[var(--muted-foreground)]">
             Generating your artwork…
