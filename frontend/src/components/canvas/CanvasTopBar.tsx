@@ -20,6 +20,8 @@ import { useSketches } from "@/hooks/useSketches";
 import { useCanvasStore } from "@/store/canvasStore";
 import { PAGE_PRESET_SIZES } from "@/types/canvas";
 
+import { KeyboardShortcutsHint } from "./KeyboardShortcutsHint";
+
 type CanvasTopBarProps = Pick<
   UseCanvasReturn,
   | "undo"
@@ -177,10 +179,11 @@ export function CanvasTopBar({
                 {isSaving ? "Saving…" : saveMessage || "Save Sketch"}
               </button>
             )}
+            <KeyboardShortcutsHint />
             <button
               type="button"
               onClick={toggleResultDrawer}
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               <Eye size={16} />
               {isResultDrawerOpen ? "Hide AI Preview" : "Show AI Preview"}

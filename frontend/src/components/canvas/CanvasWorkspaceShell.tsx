@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { CanvasTopBar } from "@/components/canvas/CanvasTopBar";
+import { MobileTabShell } from "@/components/canvas/MobileTabShell";
 import { SketchCanvas } from "@/components/canvas/SketchCanvas";
 import { ToolDock } from "@/components/canvas/ToolDock";
 import { useCanvas } from "@/hooks/useCanvas";
@@ -14,7 +15,9 @@ import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { useCanvasStore } from "@/store/canvasStore";
 import { PAGE_PRESET_SIZES } from "@/types/canvas";
 
+import { ResultPanel } from "../result/ResultPanel";
 import { ResultPreviewSheet } from "../result/ResultPreviewSheet";
+import { OnboardingHint } from "../shared/OnboardingHint";
 import { TopBar } from "../shared/TopBar";
 
 interface SketchData {
@@ -77,47 +80,64 @@ export function CanvasWorkspaceShell() {
     loadSketch();
   }, [sketchId, canvas]);
 
+  const sketchContent = (
+    <section className="min-w-0 flex-1">
+      <CanvasTopBar
+        undo={canvas.undo}
+        redo={canvas.redo}
+        clear={canvas.clear}
+        deleteSelected={canvas.deleteSelected}
+        zoomIn={canvas.zoomIn}
+        zoomOut={canvas.zoomOut}
+        resetZoom={canvas.resetZoom}
+      />
+
+      <div className="relative">
+        <SketchCanvas
+          surfaceRef={canvas.surfaceRef}
+          canvasRef={canvas.canvasRef}
+        />
+        {loadingSketch && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[30px] bg-[var(--panel)]/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2
+                size={32}
+                className="animate-spin text-[var(--accent)]"
+              />
+              <p className="text-sm text-[var(--muted-foreground)]">
+                Loading sketch...
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+
+  const resultContent = (
+    <div className="rounded-[28px] border border-[var(--border)] bg-[var(--panel)] p-4">
+      <ResultPanel />
+    </div>
+  );
+
   return (
     <>
       <TopBar />
       <main className="min-h-screen bg-[var(--background)] px-4 py-5 pb-28 sm:px-6 lg:px-8 lg:pb-5">
-        <div className="mx-auto flex max-w-[1800px] gap-4">
+        {/* Mobile: tab-based layout */}
+        <MobileTabShell
+          sketchContent={sketchContent}
+          resultContent={resultContent}
+        />
+
+        {/* Desktop: side-by-side layout */}
+        <div className="mx-auto hidden max-w-[1800px] gap-4 lg:flex">
           <ToolDock />
-
-          <section className="min-w-0 flex-1">
-            <CanvasTopBar
-              undo={canvas.undo}
-              redo={canvas.redo}
-              clear={canvas.clear}
-              deleteSelected={canvas.deleteSelected}
-              zoomIn={canvas.zoomIn}
-              zoomOut={canvas.zoomOut}
-              resetZoom={canvas.resetZoom}
-            />
-
-            <div className="relative">
-              <SketchCanvas
-                surfaceRef={canvas.surfaceRef}
-                canvasRef={canvas.canvasRef}
-              />
-              {loadingSketch && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[30px] bg-[var(--panel)]/80 backdrop-blur-sm">
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2
-                      size={32}
-                      className="animate-spin text-[var(--accent)]"
-                    />
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      Loading sketch...
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
+          {sketchContent}
         </div>
       </main>
       <ResultPreviewSheet />
+      <OnboardingHint />
     </>
   );
 }
