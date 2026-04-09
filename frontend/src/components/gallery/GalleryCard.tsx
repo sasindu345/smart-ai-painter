@@ -38,7 +38,8 @@ export function GalleryCard({ sketch, onDelete }: GalleryCardProps) {
               {/* Edit — re-open in canvas */}
               <Link
                 href={`/canvas?sketch=${sketch.id}`}
-                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm transition hover:bg-white/30"
+                aria-label={`Edit ${sketch.title} in canvas`}
+                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm transition hover:bg-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 title="Edit in Canvas"
               >
                 <Pencil size={16} />
@@ -48,7 +49,8 @@ export function GalleryCard({ sketch, onDelete }: GalleryCardProps) {
               <a
                 href={sketch.imageUrl}
                 download={`${sketch.title}.png`}
-                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm transition hover:bg-white/30"
+                aria-label={`Download ${sketch.title}`}
+                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm transition hover:bg-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 title="Download"
               >
                 <Download size={16} />
@@ -77,7 +79,8 @@ export function GalleryCard({ sketch, onDelete }: GalleryCardProps) {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm transition hover:bg-red-500/60"
+                aria-label={`Delete ${sketch.title}`}
+                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm transition hover:bg-red-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 title="Delete"
               >
                 <Trash2 size={16} />

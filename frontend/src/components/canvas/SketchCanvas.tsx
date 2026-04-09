@@ -51,7 +51,9 @@ export function SketchCanvas({ surfaceRef, canvasRef }: SketchCanvasProps) {
             <canvas
               ref={canvasRef}
               className="block"
-              aria-label="Drawing canvas"
+              role="img"
+              aria-label={`Drawing canvas, ${pagePreset} ${pageWidth} by ${pageHeight}`}
+              tabIndex={0}
             />
           </div>
         </div>

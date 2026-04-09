@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import { useState as useMenuState } from "react";
+
 import Link from "next/link";
-import { LogIn, MoonStar, Sparkles, SunMedium } from "lucide-react";
+import { LogIn, Menu, MoonStar, Sparkles, SunMedium, X } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -14,6 +16,7 @@ export function TopBar() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useMenuState(false);
   const { user, loading } = useAuth();
 
   useEffect(() => setMounted(true), []);
@@ -38,7 +41,10 @@ export function TopBar() {
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-6 text-sm text-[var(--muted-foreground)] md:flex">
+          <nav
+            className="hidden items-center gap-6 text-sm text-[var(--muted-foreground)] md:flex"
+            aria-label="Primary"
+          >
             <Link
               href="/canvas"
               className="transition hover:text-[var(--accent)]"
@@ -62,8 +68,20 @@ export function TopBar() {
           <div className="flex items-center gap-3">
             <button
               type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="inline-flex items-center justify-center rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] p-2 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] md:hidden"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav"
+            >
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+            <button
+              type="button"
               onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+              aria-pressed={isDark}
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               {mounted ? (
                 isDark ? (
@@ -93,6 +111,31 @@ export function TopBar() {
           </div>
         </div>
       </header>
+
+      {mobileMenuOpen && (
+        <nav
+          id="mobile-nav"
+          aria-label="Mobile"
+          className="fixed inset-x-0 top-[73px] z-30 border-b border-[var(--border)] bg-[color:var(--panel)]/96 p-4 backdrop-blur-xl md:hidden"
+        >
+          <div className="flex flex-col gap-2">
+            {[
+              { href: "/canvas", label: "Canvas" },
+              { href: "/generate", label: "Generate" },
+              { href: "/gallery", label: "Gallery" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--panel-elevated)]"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
