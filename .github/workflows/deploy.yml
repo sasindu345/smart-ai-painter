@@ -43,6 +43,26 @@ jobs:
           push: true
           tags: ghcr.io/${{ steps.vars.outputs.owner_lc }}/smart-ai-painter-backend:latest
 
+      - name: Validate production secrets
+        run: |
+          set -e
+          check_required() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ] || [ "$value" = "-" ]; then
+              echo "::error title=Invalid secret::${name} is empty or set to '-'"
+              exit 1
+            fi
+          }
+
+          check_required "APP_DOMAIN" "${{ secrets.APP_DOMAIN }}"
+          check_required "HF_API_TOKEN" "${{ secrets.HF_API_TOKEN }}"
+          check_required "HF_MODEL_ID" "${{ secrets.HF_MODEL_ID }}"
+          check_required "SUPABASE_URL" "${{ secrets.SUPABASE_URL }}"
+          check_required "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          check_required "SUPABASE_JWT_SECRET" "${{ secrets.SUPABASE_JWT_SECRET }}"
+          check_required "SUPABASE_STORAGE_BUCKET" "${{ secrets.SUPABASE_STORAGE_BUCKET }}"
+
       - name: Prepare remote directories
         uses: appleboy/ssh-action@v1.2.0
         with:

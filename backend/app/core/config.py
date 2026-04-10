@@ -39,6 +39,16 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in stripped.split(",") if origin.strip()]
         return value
 
+    @field_validator("supabase_storage_bucket", mode="before")
+    @classmethod
+    def normalize_storage_bucket(cls, value: str) -> str:
+        if value is None:
+            return "generated-images"
+        cleaned = str(value).strip()
+        if not cleaned or cleaned == "-":
+            return "generated-images"
+        return cleaned
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
