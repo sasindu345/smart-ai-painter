@@ -220,6 +220,13 @@ async def _huggingface_generate(
             detail="Hugging Face API token not configured. Set HF_API_TOKEN in .env.",
         )
 
+    model_id = settings.hf_model_id.strip()
+    if not model_id or model_id == "-":
+        raise HTTPException(
+            status_code=503,
+            detail="Hugging Face model id is invalid. Set HF_MODEL_ID to a valid repo id.",
+        )
+
     # Step 1: Analyze sketch for composition hints
     sketch_info = _analyze_sketch(sketch_base64)
 
@@ -232,7 +239,7 @@ async def _huggingface_generate(
         client = InferenceClient(token=settings.hf_api_token)
         return client.text_to_image(
             prompt=enriched_prompt,
-            model=settings.hf_model_id,
+            model=model_id,
             guidance_scale=7.5 + (strength * 5.0),
             num_inference_steps=30,
         )
@@ -258,7 +265,7 @@ async def _huggingface_generate(
             image_base64=image_b64,
             generation_id=str(uuid.uuid4()),
             mode="huggingface",
-            provider=settings.hf_model_id,
+            provider=model_id,
         )
     except HTTPException:
         raise

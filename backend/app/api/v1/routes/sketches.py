@@ -1,4 +1,5 @@
 import base64
+import io
 import logging
 import uuid
 
@@ -14,12 +15,17 @@ logger = logging.getLogger(__name__)
 
 def _upload_with_bucket_retry(client, bucket: str, file_name: str, file_bytes: bytes):
     """Upload once, and if bucket is missing create it and retry."""
-    try:
+    def _upload_once():
+        file_obj = io.BytesIO(file_bytes)
+        file_obj.name = file_name.rsplit("/", 1)[-1]
         return client.storage.from_(bucket).upload(
             path=file_name,
-            file=file_bytes,
+            file=file_obj,
             file_options={"content-type": "image/png"},
         )
+
+    try:
+        return _upload_once()
     except Exception as exc:
         message = str(exc).lower()
         if "bucket not found" not in message:
@@ -27,11 +33,7 @@ def _upload_with_bucket_retry(client, bucket: str, file_name: str, file_bytes: b
 
         logger.warning("Bucket '%s' not found, creating and retrying upload", bucket)
         client.storage.create_bucket(bucket, {"public": True})
-        return client.storage.from_(bucket).upload(
-            path=file_name,
-            file=file_bytes,
-            file_options={"content-type": "image/png"},
-        )
+        return _upload_once()
 
 
 def _get_supabase():
