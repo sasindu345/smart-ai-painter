@@ -167,6 +167,8 @@ These budgets run on every PR via the `lighthouse` job in `.github/workflows/ci.
 
 The app is designed to deploy to a DigitalOcean droplet via Docker Compose, behind Nginx. See [`infra/`](infra/) and [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
+Before each release, run the production checklist: [`infra/production-checklist.md`](infra/production-checklist.md).
+
 ## License
 
 MIT — see `LICENSE` if present.
