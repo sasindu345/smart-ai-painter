@@ -35,21 +35,62 @@ def upload_generation(image_base64: str, user_id: str) -> str:
             tmp.write(file_bytes)
             temp_path = tmp.name
 
-        client.storage.from_(bucket).upload(
-            path=file_name,
-            file=temp_path,
-            file_options={"content-type": "image/png"},
-        )
+        attempts = [
+            lambda: client.storage.from_(bucket).upload(
+                path=file_name,
+                file=temp_path,
+                file_options={"content-type": "image/png"},
+            ),
+            lambda: client.storage.from_(bucket).upload(
+                path=file_name,
+                file=file_bytes,
+                file_options={"content-type": "image/png"},
+            ),
+        ]
+
+        last_exc = None
+        for attempt in attempts:
+            try:
+                attempt()
+                last_exc = None
+                break
+            except Exception as exc:
+                last_exc = exc
+
+        if last_exc is not None:
+            with open(temp_path, "rb") as file_obj:
+                client.storage.from_(bucket).upload(
+                    path=file_name,
+                    file=file_obj,
+                    file_options={"content-type": "image/png"},
+                )
     except Exception as exc:
         if "bucket not found" not in str(exc).lower():
             raise
 
         client.storage.create_bucket(bucket, {"public": True})
-        client.storage.from_(bucket).upload(
-            path=file_name,
-            file=temp_path,
-            file_options={"content-type": "image/png"},
-        )
+
+        # Retry with the same compatibility sequence after bucket creation.
+        try:
+            client.storage.from_(bucket).upload(
+                path=file_name,
+                file=temp_path,
+                file_options={"content-type": "image/png"},
+            )
+        except Exception:
+            try:
+                client.storage.from_(bucket).upload(
+                    path=file_name,
+                    file=file_bytes,
+                    file_options={"content-type": "image/png"},
+                )
+            except Exception:
+                with open(temp_path, "rb") as file_obj:
+                    client.storage.from_(bucket).upload(
+                        path=file_name,
+                        file=file_obj,
+                        file_options={"content-type": "image/png"},
+                    )
     finally:
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)

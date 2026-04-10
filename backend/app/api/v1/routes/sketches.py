@@ -25,11 +25,39 @@ def _upload_with_bucket_retry(client, bucket: str, file_name: str, file_bytes: b
                 tmp.write(file_bytes)
                 temp_path = tmp.name
 
-        return client.storage.from_(bucket).upload(
-            path=file_name,
-            file=temp_path,
-            file_options={"content-type": "image/png"},
-        )
+        # Supabase Python SDK behavior has varied across versions. Try the most
+        # common accepted payload types in order.
+        attempts = [
+            lambda: client.storage.from_(bucket).upload(
+                path=file_name,
+                file=temp_path,
+                file_options={"content-type": "image/png"},
+            ),
+            lambda: client.storage.from_(bucket).upload(
+                path=file_name,
+                file=file_bytes,
+                file_options={"content-type": "image/png"},
+            ),
+        ]
+
+        last_exc = None
+        for attempt in attempts:
+            try:
+                return attempt()
+            except Exception as exc:
+                last_exc = exc
+
+        with open(temp_path, "rb") as file_obj:
+            try:
+                return client.storage.from_(bucket).upload(
+                    path=file_name,
+                    file=file_obj,
+                    file_options={"content-type": "image/png"},
+                )
+            except Exception as exc:
+                last_exc = exc
+
+        raise last_exc
 
     try:
         return _upload_once()
