@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     api_version: str = "1.0.0"
     allowed_origins: Annotated[list[str], NoDecode] = [
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
     ]
 
     # AI generation settings

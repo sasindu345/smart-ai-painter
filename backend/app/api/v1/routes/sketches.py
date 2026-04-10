@@ -1,4 +1,5 @@
 import base64
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,12 +9,31 @@ from app.core.config import settings
 from app.models.sketch import SketchItem, SketchListResponse, SketchSaveRequest
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _get_supabase():
     from supabase import create_client
 
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase is not configured on the server",
+        )
+    if not settings.supabase_storage_bucket:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase storage bucket is not configured on the server",
+        )
+
+    try:
+        return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    except Exception as exc:
+        logger.error("Failed to initialize Supabase client: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Failed to initialize Supabase client",
+        )
 
 
 @router.post("/", response_model=SketchItem, status_code=status.HTTP_201_CREATED)
@@ -28,31 +48,58 @@ async def save_sketch(
 
     # Upload image to storage
     file_name = f"{user_id}/sketches/{uuid.uuid4()}.png"
-    file_bytes = base64.b64decode(req.image_base64)
+    try:
+        file_bytes = base64.b64decode(req.image_base64)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid base64 image data",
+        )
 
-    client.storage.from_(bucket).upload(
-        path=file_name,
-        file=file_bytes,
-        file_options={"content-type": "image/png"},
-    )
+    try:
+        upload_result = client.storage.from_(bucket).upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/png"},
+        )
+        logger.info("Storage upload result: %s", upload_result)
+    except Exception as exc:
+        logger.error("Storage upload failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to upload sketch to storage: {exc}",
+        )
 
     image_url = client.storage.from_(bucket).get_public_url(file_name)
 
     # Insert DB record
-    result = (
-        client.table("sketches")
-        .insert(
-            {
-                "user_id": user_id,
-                "title": req.title,
-                "image_url": image_url,
-                "page_preset": req.page_preset,
-                "page_width": req.page_width,
-                "page_height": req.page_height,
-            }
+    try:
+        result = (
+            client.table("sketches")
+            .insert(
+                {
+                    "user_id": user_id,
+                    "title": req.title,
+                    "image_url": image_url,
+                    "page_preset": req.page_preset,
+                    "page_width": req.page_width,
+                    "page_height": req.page_height,
+                }
+            )
+            .execute()
         )
-        .execute()
-    )
+    except Exception as exc:
+        logger.error("DB insert failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to save sketch record: {exc}",
+        )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Sketch record was not returned after insert",
+        )
 
     row = result.data[0]
     return SketchItem(**row)
