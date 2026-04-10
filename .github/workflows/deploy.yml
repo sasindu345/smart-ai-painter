@@ -79,20 +79,37 @@ jobs:
             cp /tmp/smart-ai-painter-release/infra/scripts/deploy.sh "$APP_DIR/infra/scripts/deploy.sh"
             chmod +x "$APP_DIR/infra/scripts/deploy.sh"
 
-            cat > "$APP_DIR/.env.prod" <<EOF
-GHCR_OWNER=${{ steps.vars.outputs.owner_lc }}
-APP_DOMAIN=${{ secrets.APP_DOMAIN }}
-AI_MODE=${{ secrets.AI_MODE }}
-HF_API_TOKEN=${{ secrets.HF_API_TOKEN }}
-HF_MODEL_ID=${{ secrets.HF_MODEL_ID }}
-HF_TIMEOUT_SECONDS=${{ secrets.HF_TIMEOUT_SECONDS }}
-SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
-SUPABASE_STORAGE_BUCKET=${{ secrets.SUPABASE_STORAGE_BUCKET }}
-EOF
+            {
+              echo "GHCR_OWNER=${{ steps.vars.outputs.owner_lc }}"
+              echo "APP_DOMAIN=${{ secrets.APP_DOMAIN }}"
+              echo "AI_MODE=${{ secrets.AI_MODE }}"
+              echo "HF_API_TOKEN=${{ secrets.HF_API_TOKEN }}"
+              echo "HF_MODEL_ID=${{ secrets.HF_MODEL_ID }}"
+              echo "HF_TIMEOUT_SECONDS=${{ secrets.HF_TIMEOUT_SECONDS }}"
+              echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}"
+              echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+              echo "SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}"
+              echo "SUPABASE_STORAGE_BUCKET=${{ secrets.SUPABASE_STORAGE_BUCKET }}"
+            } > "$APP_DIR/.env.prod"
 
             APP_DIR="$APP_DIR" \
             GHCR_USERNAME="${{ secrets.GHCR_USERNAME }}" \
             GHCR_TOKEN="${{ secrets.GHCR_TOKEN }}" \
             "$APP_DIR/infra/scripts/deploy.sh"
+
+      - name: Notify on deployment failure
+        if: ${{ failure() }}
+        run: |
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "## Deployment failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Repository: ${{ github.repository }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch: ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Run: $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "::error title=Production deployment failed::See $RUN_URL"
+
+          if [ -n "${{ secrets.DEPLOY_WEBHOOK_URL }}" ]; then
+            curl -sS -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\":\"Deploy failed for ${{ github.repository }} on ${{ github.ref_name }}. Run: $RUN_URL\"}" \
+              || true
+          fi
