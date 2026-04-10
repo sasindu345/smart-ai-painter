@@ -1,5 +1,6 @@
 import base64
-import io
+import os
+import tempfile
 import uuid
 
 from fastapi import HTTPException, status
@@ -27,13 +28,16 @@ def upload_generation(image_base64: str, user_id: str) -> str:
 
     file_name = f"{user_id}/{uuid.uuid4()}.png"
     file_bytes = base64.b64decode(image_base64)
+    temp_path = None
 
     try:
-        file_obj = io.BytesIO(file_bytes)
-        file_obj.name = file_name.rsplit("/", 1)[-1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+            tmp.write(file_bytes)
+            temp_path = tmp.name
+
         client.storage.from_(bucket).upload(
             path=file_name,
-            file=file_obj,
+            file=temp_path,
             file_options={"content-type": "image/png"},
         )
     except Exception as exc:
@@ -41,13 +45,14 @@ def upload_generation(image_base64: str, user_id: str) -> str:
             raise
 
         client.storage.create_bucket(bucket, {"public": True})
-        file_obj = io.BytesIO(file_bytes)
-        file_obj.name = file_name.rsplit("/", 1)[-1]
         client.storage.from_(bucket).upload(
             path=file_name,
-            file=file_obj,
+            file=temp_path,
             file_options={"content-type": "image/png"},
         )
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
 
     public_url = client.storage.from_(bucket).get_public_url(file_name)
     return public_url

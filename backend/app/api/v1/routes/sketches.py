@@ -1,6 +1,7 @@
 import base64
-import io
 import logging
+import os
+import tempfile
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -15,12 +16,18 @@ logger = logging.getLogger(__name__)
 
 def _upload_with_bucket_retry(client, bucket: str, file_name: str, file_bytes: bytes):
     """Upload once, and if bucket is missing create it and retry."""
+    temp_path = None
+
     def _upload_once():
-        file_obj = io.BytesIO(file_bytes)
-        file_obj.name = file_name.rsplit("/", 1)[-1]
+        nonlocal temp_path
+        if temp_path is None:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+                tmp.write(file_bytes)
+                temp_path = tmp.name
+
         return client.storage.from_(bucket).upload(
             path=file_name,
-            file=file_obj,
+            file=temp_path,
             file_options={"content-type": "image/png"},
         )
 
@@ -34,6 +41,9 @@ def _upload_with_bucket_retry(client, bucket: str, file_name: str, file_bytes: b
         logger.warning("Bucket '%s' not found, creating and retrying upload", bucket)
         client.storage.create_bucket(bucket, {"public": True})
         return _upload_once()
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 
 def _get_supabase():
