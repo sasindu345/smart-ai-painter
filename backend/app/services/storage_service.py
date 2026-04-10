@@ -27,11 +27,22 @@ def upload_generation(image_base64: str, user_id: str) -> str:
     file_name = f"{user_id}/{uuid.uuid4()}.png"
     file_bytes = base64.b64decode(image_base64)
 
-    client.storage.from_(bucket).upload(
-        path=file_name,
-        file=file_bytes,
-        file_options={"content-type": "image/png"},
-    )
+    try:
+        client.storage.from_(bucket).upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/png"},
+        )
+    except Exception as exc:
+        if "bucket not found" not in str(exc).lower():
+            raise
+
+        client.storage.create_bucket(bucket, {"public": True})
+        client.storage.from_(bucket).upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/png"},
+        )
 
     public_url = client.storage.from_(bucket).get_public_url(file_name)
     return public_url

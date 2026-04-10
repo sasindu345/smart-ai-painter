@@ -12,6 +12,28 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+def _upload_with_bucket_retry(client, bucket: str, file_name: str, file_bytes: bytes):
+    """Upload once, and if bucket is missing create it and retry."""
+    try:
+        return client.storage.from_(bucket).upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/png"},
+        )
+    except Exception as exc:
+        message = str(exc).lower()
+        if "bucket not found" not in message:
+            raise
+
+        logger.warning("Bucket '%s' not found, creating and retrying upload", bucket)
+        client.storage.create_bucket(bucket, {"public": True})
+        return client.storage.from_(bucket).upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/png"},
+        )
+
+
 def _get_supabase():
     from supabase import create_client
 
@@ -57,11 +79,7 @@ async def save_sketch(
         )
 
     try:
-        upload_result = client.storage.from_(bucket).upload(
-            path=file_name,
-            file=file_bytes,
-            file_options={"content-type": "image/png"},
-        )
+        upload_result = _upload_with_bucket_retry(client, bucket, file_name, file_bytes)
         logger.info("Storage upload result: %s", upload_result)
     except Exception as exc:
         logger.error("Storage upload failed: %s", exc, exc_info=True)
