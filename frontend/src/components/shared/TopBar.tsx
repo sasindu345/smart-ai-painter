@@ -26,16 +26,16 @@ export function TopBar() {
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color:var(--panel)]/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-4 px-5 py-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg shadow-black/15">
-              <Sparkles size={18} />
+        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-5 sm:py-4">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg shadow-black/15 sm:h-11 sm:w-11 sm:rounded-2xl">
+              <Sparkles size={16} />
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.28em] text-[var(--muted-foreground)]">
+            <div className="min-w-0">
+              <p className="hidden text-xs font-medium uppercase tracking-[0.28em] text-[var(--muted-foreground)] sm:block">
                 Smart AI Painter
               </p>
-              <h1 className="text-lg font-semibold text-[var(--foreground)]">
+              <h1 className="truncate text-sm font-semibold text-[var(--foreground)] sm:text-lg">
                 Canvas Studio
               </h1>
             </div>
@@ -65,7 +65,7 @@ export function TopBar() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -81,7 +81,7 @@ export function TopBar() {
               onClick={() => setTheme(isDark ? "light" : "dark")}
               aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
               aria-pressed={isDark}
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] p-2 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] sm:px-4 sm:py-2"
             >
               {mounted ? (
                 isDark ? (
@@ -92,7 +92,9 @@ export function TopBar() {
               ) : (
                 <MoonStar size={16} />
               )}
-              {mounted ? (isDark ? "Light" : "Dark") : "Dark"}
+              <span className="hidden sm:inline">
+                {mounted ? (isDark ? "Light" : "Dark") : "Dark"}
+              </span>
             </button>
 
             {!loading &&
@@ -102,10 +104,10 @@ export function TopBar() {
                 <button
                   type="button"
                   onClick={() => setAuthOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] p-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 sm:px-4 sm:py-2"
                 >
                   <LogIn size={16} />
-                  Sign In
+                  <span className="hidden sm:inline">Sign In</span>
                 </button>
               ))}
           </div>

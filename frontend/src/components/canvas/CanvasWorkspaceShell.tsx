@@ -2,20 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { CanvasTopBar } from "@/components/canvas/CanvasTopBar";
-import { MobileTabShell } from "@/components/canvas/MobileTabShell";
+import { MobilePhoneShell } from "@/components/canvas/MobilePhoneShell";
 import { SketchCanvas } from "@/components/canvas/SketchCanvas";
+import { TabletShell } from "@/components/canvas/TabletShell";
 import { ToolDock } from "@/components/canvas/ToolDock";
 import { useCanvas } from "@/hooks/useCanvas";
+import { useDeviceType, type DeviceType } from "@/hooks/useDeviceType";
 import { apiRequest } from "@/lib/api";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { useCanvasStore } from "@/store/canvasStore";
 import { PAGE_PRESET_SIZES } from "@/types/canvas";
 
-import { ResultPanel } from "../result/ResultPanel";
 import { ResultPreviewSheet } from "../result/ResultPreviewSheet";
 import { OnboardingHint } from "../shared/OnboardingHint";
 import { TopBar } from "../shared/TopBar";
@@ -30,6 +31,26 @@ interface SketchData {
 }
 
 export function CanvasWorkspaceShell() {
+  const device = useDeviceType();
+
+  if (device === null) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-[var(--background)]">
+        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg">
+          <Sparkles size={22} />
+        </div>
+        <Loader2
+          size={28}
+          className="animate-spin text-[var(--muted-foreground)]"
+        />
+      </div>
+    );
+  }
+
+  return <CanvasShellInner key={device} device={device} />;
+}
+
+function CanvasShellInner({ device }: { device: DeviceType }) {
   const canvas = useCanvas();
   const searchParams = useSearchParams();
   const sketchId = searchParams.get("sketch");
@@ -56,7 +77,6 @@ export function CanvasWorkspaceShell() {
           { headers },
         );
 
-        // Set page dimensions
         const preset = sketch.page_preset as keyof typeof PAGE_PRESET_SIZES;
         if (preset in PAGE_PRESET_SIZES) {
           useCanvasStore.getState().setPagePreset(preset);
@@ -66,9 +86,7 @@ export function CanvasWorkspaceShell() {
             .setCustomPageSize(sketch.page_width, sketch.page_height);
         }
 
-        // Wait a tick for canvas to be ready after potential resize
         await new Promise((r) => setTimeout(r, 100));
-
         await canvas.loadSketchImage(sketch.image_url);
       } catch (err) {
         console.error("Failed to load sketch:", err);
@@ -80,6 +98,29 @@ export function CanvasWorkspaceShell() {
     loadSketch();
   }, [sketchId, canvas]);
 
+  // ——— Phone ———
+  if (device === "phone") {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        <TopBar />
+        <MobilePhoneShell canvas={canvas} loadingSketch={loadingSketch} />
+        <OnboardingHint />
+      </div>
+    );
+  }
+
+  // ——— Tablet ———
+  if (device === "tablet") {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        <TopBar />
+        <TabletShell canvas={canvas} loadingSketch={loadingSketch} />
+        <OnboardingHint />
+      </div>
+    );
+  }
+
+  // ——— Desktop ———
   const sketchContent = (
     <section className="min-w-0 flex-1">
       <CanvasTopBar
@@ -105,7 +146,7 @@ export function CanvasWorkspaceShell() {
                 className="animate-spin text-[var(--accent)]"
               />
               <p className="text-sm text-[var(--muted-foreground)]">
-                Loading sketch...
+                Loading sketch…
               </p>
             </div>
           </div>
@@ -114,24 +155,11 @@ export function CanvasWorkspaceShell() {
     </section>
   );
 
-  const resultContent = (
-    <div className="rounded-[28px] border border-[var(--border)] bg-[var(--panel)] p-4">
-      <ResultPanel />
-    </div>
-  );
-
   return (
     <>
       <TopBar />
-      <main className="min-h-screen bg-[var(--background)] px-4 py-5 pb-28 sm:px-6 lg:px-8 lg:pb-5">
-        {/* Mobile: tab-based layout */}
-        <MobileTabShell
-          sketchContent={sketchContent}
-          resultContent={resultContent}
-        />
-
-        {/* Desktop: side-by-side layout */}
-        <div className="mx-auto hidden max-w-[1800px] gap-4 lg:flex">
+      <main className="min-h-screen bg-[var(--background)] px-4 py-5 pb-5 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1800px] gap-4">
           <ToolDock />
           {sketchContent}
         </div>
