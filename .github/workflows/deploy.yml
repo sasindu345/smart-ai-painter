@@ -80,17 +80,17 @@ jobs:
             chmod +x "$APP_DIR/infra/scripts/deploy.sh"
 
             cat > "$APP_DIR/.env.prod" <<EOF
-            GHCR_OWNER=${{ steps.vars.outputs.owner_lc }}
-            APP_DOMAIN=${{ secrets.APP_DOMAIN }}
-            AI_MODE=${{ secrets.AI_MODE }}
-            HF_API_TOKEN=${{ secrets.HF_API_TOKEN }}
-            HF_MODEL_ID=${{ secrets.HF_MODEL_ID }}
-            HF_TIMEOUT_SECONDS=${{ secrets.HF_TIMEOUT_SECONDS }}
-            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-            SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
-            SUPABASE_STORAGE_BUCKET=${{ secrets.SUPABASE_STORAGE_BUCKET }}
-            EOF
+GHCR_OWNER=${{ steps.vars.outputs.owner_lc }}
+APP_DOMAIN=${{ secrets.APP_DOMAIN }}
+AI_MODE=${{ secrets.AI_MODE }}
+HF_API_TOKEN=${{ secrets.HF_API_TOKEN }}
+HF_MODEL_ID=${{ secrets.HF_MODEL_ID }}
+HF_TIMEOUT_SECONDS=${{ secrets.HF_TIMEOUT_SECONDS }}
+SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
+SUPABASE_STORAGE_BUCKET=${{ secrets.SUPABASE_STORAGE_BUCKET }}
+EOF
 
             APP_DIR="$APP_DIR" \
             GHCR_USERNAME="${{ secrets.GHCR_USERNAME }}" \
