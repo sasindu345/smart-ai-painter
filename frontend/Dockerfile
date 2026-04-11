@@ -13,7 +13,20 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm config set registry https://registry.npmjs.org/ \
+		&& npm config set fetch-retries 5 \
+		&& npm config set fetch-retry-factor 2 \
+		&& npm config set fetch-retry-mintimeout 20000 \
+		&& npm config set fetch-retry-maxtimeout 120000 \
+		&& for attempt in 1 2 3; do \
+			npm ci --no-audit --no-fund && break || { \
+				if [ "$attempt" -eq 3 ]; then \
+					exit 1; \
+				fi; \
+				echo "npm ci failed (attempt $attempt), retrying..."; \
+				sleep 10; \
+			}; \
+		done
 
 COPY . .
 
