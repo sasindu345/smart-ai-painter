@@ -9,7 +9,17 @@ const TABLET_QUERY = "(min-width: 768px) and (max-width: 1023px)";
 
 function detectDevice(): DeviceType {
   if (typeof window === "undefined") return "desktop";
+  const shortestSide = Math.min(window.innerWidth, window.innerHeight);
+  const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+
+  // Real phones in landscape can exceed 767px width, so classify by shortest side.
+  if (shortestSide <= 767) return "phone";
+
   if (window.matchMedia(PHONE_QUERY).matches) return "phone";
+
+  // Touch-first medium screens are usually tablets.
+  if (isCoarsePointer && shortestSide <= 1024) return "tablet";
+
   if (window.matchMedia(TABLET_QUERY).matches) return "tablet";
   return "desktop";
 }
