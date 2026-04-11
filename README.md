@@ -3,98 +3,70 @@
 > **Sketch first. Let AI finish it.**
 > A workspace-first sketch editor that turns rough drawings into polished AI artwork without ever leaving the canvas.
 
-**Live demo:** _Add your deployment URL here_ (e.g. `https://smart-ai-painter.vercel.app`)
+**Live:** [smartpainter.me](https://smartpainter.me)
 
 ---
 
 ## Features
 
-- **Full-width drawing workspace** — Photoshop-style left dock, page-size presets, zoom, undo/redo
+- **Full drawing workspace** — tool dock, page presets (Square, Portrait, Landscape), zoom, undo/redo
 - **Brush, eraser, shapes, and selection tools** with keyboard shortcuts
-- **AI generation drawer** that opens on-demand so the canvas never loses real estate
-- **Prompt history** — your last 10 prompts saved to localStorage for one-click reuse
+- **Quick color palette** with custom color picker and brush size control
+- **AI generation panel** — describe your vision, pick a style, and generate artwork from your sketch
+- **Prompt history** — last 10 prompts saved for one-click reuse
 - **Style presets and sketch-strength control**
-- **Supabase auth** (email magic-link) with personal sketch and generation gallery
-- **Shareable generation links** (`/g/[id]`) with rich Open Graph previews
-- **Mobile responsive** with a tab-based sketch/result layout for small screens
-- **Dark mode** with system-preference following
-- **Onboarding hint** for first-time visitors (dismiss persists across sessions)
-- **Reduced motion** respected for accessibility
+- **Authentication** (Supabase email magic-link) with personal sketch and generation gallery
+- **Shareable generation links** (`/g/[id]`) with Open Graph previews
+- **Device-specific layouts** — dedicated phone, tablet, and desktop shells with touch-first controls
+- **Dark / Light mode** with system-preference detection
+- **Accessible** — keyboard navigation, reduced motion support, skip-to-content link
 
 ## Architecture
 
-```text
-┌──────────────────┐         ┌────────────────────┐         ┌───────────────────┐
-│   Next.js 14     │         │     FastAPI        │         │     Supabase      │
-│  (App Router)    │─REST───▶│   (Python 3.12)    │─SDK────▶│  Auth, DB, Files  │
-│                  │         │                    │         │                   │
-│  - Fabric.js     │         │  - Image processor │         └───────────────────┘
-│  - Zustand store │         │  - AI provider     │                  ▲
-│  - TanStack Q.   │         │  - Storage svc     │                  │
-│  - Tailwind CSS  │         │                    │                  │
-└──────────────────┘         └────────┬───────────┘                  │
-        ▲                             │                              │
-        │                             ▼                              │
-        │                    ┌────────────────────┐                  │
-        │                    │   AI Provider      │──────────────────┘
-        │                    │ (Replicate / SDK)  │
-        │                    └────────────────────┘
-        │
-        └── Browser canvas (Fabric.js) — strokes serialized via toDataURL,
-            posted to FastAPI, returned as base64 PNG, optionally persisted
-            to Supabase storage if the user is signed in.
+```
+Next.js 14 (Frontend)  ──REST──▶  FastAPI (Backend)  ──SDK──▶  Supabase (Auth, DB, Storage)
+     │                                  │
+  Fabric.js canvas                AI Provider (Replicate)
+  Zustand state
+  TanStack Query
 ```
 
-### Request flow
+### How it works
 
-1. **User draws** on the Fabric.js canvas (history pushed to Zustand on each stroke).
-2. **Generate** opens the result drawer; canvas is exported to base64 PNG.
-3. **POST `/api/v1/generate`** sends `{sketch_base64, prompt, style, strength, page_*}` to FastAPI.
-4. **Backend** normalises the sketch (`Pillow`), calls the active AI provider, and returns the generated PNG.
-5. If the user is **authenticated**, the result is uploaded to Supabase Storage and a row is written to the `generations` table.
-6. **Shareable URL** `/g/{id}` is a server-rendered page that fetches metadata from `/api/v1/gallery/public/{id}` and emits Open Graph + Twitter card tags.
-
-## Screenshots
-
-> Add screenshots once a deployment is live.
-> Suggested: `docs/screenshots/canvas-light.png`, `docs/screenshots/canvas-dark.png`, `docs/screenshots/result-drawer.png`, `docs/screenshots/mobile-tabs.png`.
-
-## Repository layout
-
-This is a monorepo organised as:
-
-- [`frontend/`](frontend/) — Next.js 14 (App Router) app
-- [`backend/`](backend/) — FastAPI service
-- [`infra/`](infra/) — Docker, Nginx, and deployment scripts
-- [`supabase/`](supabase/) — SQL migrations and RLS policies
-- [`.github/workflows/`](.github/workflows/) — CI (lint, type-check, e2e, Lighthouse) and deploy
-
-```text
-smart-ai-painter/
-├── frontend/
-├── backend/
-├── infra/
-├── supabase/
-└── .github/
-```
+1. User draws on the Fabric.js canvas
+2. "AI Generate" exports the canvas to base64 PNG
+3. `POST /api/v1/generate` sends sketch + prompt + style to FastAPI
+4. Backend processes the sketch and calls the AI provider
+5. Generated image is returned and (if authenticated) saved to Supabase Storage
+6. Shareable URL `/g/{id}` serves the result with Open Graph metadata
 
 ## Tech Stack
 
-| Layer       | Tools                                                                          |
-| ----------- | ------------------------------------------------------------------------------ |
-| Frontend    | Next.js 14, TypeScript, Tailwind CSS, Fabric.js, TanStack Query, Zustand, Zod  |
-| Backend     | Python 3.12, FastAPI, Uvicorn, Pillow, httpx, pydantic                         |
-| Platform    | Supabase (Auth + Postgres + Storage), Docker, Nginx, DigitalOcean              |
-| Quality     | ESLint, Prettier, Husky + lint-staged, Pytest, Playwright, Lighthouse CI       |
-| CI/CD       | GitHub Actions                                                                 |
+| Layer    | Tools |
+|----------|-------|
+| Frontend | Next.js 14, TypeScript, Tailwind CSS, Fabric.js, TanStack Query, Zustand |
+| Backend  | Python 3.12, FastAPI, Uvicorn, Pillow, httpx, Pydantic |
+| Platform | Supabase (Auth + Postgres + Storage), Docker, Nginx |
+| CI/CD    | GitHub Actions, EC2 deployment |
 
-## Getting started (local development)
+## Repository Layout
+
+```
+smart-ai-painter/
+├── frontend/    — Next.js app
+├── backend/     — FastAPI service
+├── infra/       — Docker, Nginx, deploy configs
+├── supabase/    — SQL migrations and RLS policies
+└── .github/     — CI/CD workflows
+```
+
+## Getting Started
 
 ### Prerequisites
 
 - Node.js 20+
 - Python 3.12+
-- Supabase project (free tier is fine)
+- Supabase project
 
 ### Frontend
 
@@ -105,70 +77,42 @@ npm install
 npm run dev
 ```
 
-The app starts on `http://localhost:3000`.
+Runs on `http://localhost:3000`.
 
 ### Backend
 
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
-cp .env.example .env                # fill in Supabase + AI provider keys
+pip install -r requirements.txt
+cp .env.example .env               # fill in Supabase + AI provider keys
 uvicorn app.main:app --reload
 ```
 
-The API starts on `http://localhost:8000`.
+Runs on `http://localhost:8000`.
 
-### Quality checks
+## Keyboard Shortcuts
 
-```bash
-# Frontend
-cd frontend
-npm run lint
-npm run type-check
-npm run test:e2e            # Playwright (full generate flow)
-npm run lighthouse          # Lighthouse CI (perf/a11y/seo budget)
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/⌘ + Z` | Undo |
+| `Ctrl/⌘ + Shift + Z` | Redo |
+| `Ctrl/⌘ + Y` | Redo (alt) |
+| `Delete / Backspace` | Delete selected |
+| `V` | Select |
+| `H` | Pan |
+| `B` | Brush |
+| `E` | Eraser |
+| `R` | Rectangle |
+| `O` | Ellipse |
+| `L` | Line |
 
-# Backend
-cd backend
-pytest tests/ -v
-```
-
-## Keyboard shortcuts
-
-| Shortcut                 | Action                |
-| ------------------------ | --------------------- |
-| `⌘/Ctrl` + `Z`           | Undo                  |
-| `⌘/Ctrl` + `Shift` + `Z` | Redo                  |
-| `⌘/Ctrl` + `Y`           | Redo (alt)            |
-| `Delete` / `Backspace`   | Delete selected       |
-| `V`                      | Select tool           |
-| `H`                      | Move (pan) tool       |
-| `B`                      | Brush tool            |
-| `E`                      | Eraser tool           |
-| `R`                      | Rectangle tool        |
-| `O`                      | Ellipse tool          |
-| `L`                      | Line tool             |
-
-A live reference is available in-app via the **Shortcuts** button in the canvas top bar.
-
-## Performance & Accessibility budgets
-
-The Lighthouse CI config (`frontend/lighthouserc.json`) enforces a **minimum score of 0.9** for:
-
-- Performance
-- Accessibility
-- Best Practices
-- SEO
-
-These budgets run on every PR via the `lighthouse` job in `.github/workflows/ci.yml`.
+Also available in-app via the **Shortcuts** button.
 
 ## Deployment
 
-The app is designed to deploy to a DigitalOcean droplet via Docker Compose, behind Nginx. See [`infra/`](infra/) and [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
-
-Before each release, run the production checklist: [`infra/production-checklist.md`](infra/production-checklist.md).
+Deployed on EC2 via Docker Compose behind Nginx. See [`infra/`](infra/) and [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
 ## License
 
-MIT — see `LICENSE` if present.
+MIT
