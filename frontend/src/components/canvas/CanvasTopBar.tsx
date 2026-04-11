@@ -4,13 +4,15 @@ import { useState } from "react";
 
 import {
   Check,
-  Eye,
+  EyeOff,
   Loader2,
   Minus,
+  Palette,
   Plus,
   RotateCcw,
   RotateCw,
   Save,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 
@@ -39,6 +41,18 @@ const pagePresets = Object.entries(PAGE_PRESET_SIZES) as Array<
     (typeof PAGE_PRESET_SIZES)[keyof typeof PAGE_PRESET_SIZES],
   ]
 >;
+
+const QUICK_COLORS = [
+  "#111827",
+  "#dc2626",
+  "#ea580c",
+  "#f59e0b",
+  "#16a34a",
+  "#2563eb",
+  "#7c3aed",
+  "#db2777",
+  "#ffffff",
+];
 
 export function CanvasTopBar({
   undo,
@@ -110,186 +124,249 @@ export function CanvasTopBar({
   }
 
   return (
-    <section className="mb-4 rounded-[30px] border border-[var(--border)] bg-[var(--panel)] p-4 shadow-[0_22px_80px_rgba(15,23,42,0.08)]">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
-              Workspace Controls
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
-              Full-width editor
-            </h2>
+    <section className="mb-4 space-y-2">
+      {/* Row 1: Actions bar */}
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--panel)] px-3 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+        {/* Left: undo/redo/delete */}
+        <div className="flex items-center gap-1">
+          <ActionBtn
+            icon={RotateCcw}
+            label="Undo"
+            onClick={undo}
+            disabled={!canUndo}
+            shortcut="Ctrl+Z"
+          />
+          <ActionBtn
+            icon={RotateCw}
+            label="Redo"
+            onClick={redo}
+            disabled={!canRedo}
+            shortcut="Ctrl+Y"
+          />
+
+          <Divider />
+
+          <ActionBtn
+            icon={Trash2}
+            label="Delete selected"
+            onClick={deleteSelected}
+          />
+          <ActionBtn
+            icon={Trash2}
+            label="Clear canvas"
+            onClick={() => {
+              if (!isEmpty && window.confirm("Clear the current canvas?")) {
+                clear();
+              }
+            }}
+            disabled={isEmpty}
+            tone="danger"
+          />
+        </div>
+
+        {/* Center: page presets */}
+        <div className="flex items-center gap-1 rounded-xl bg-[var(--panel-elevated)] p-1">
+          {pagePresets.map(([preset, presetConfig]) => {
+            const isActive = pagePreset === preset;
+            return (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setPagePreset(preset)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
+                  isActive
+                    ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm"
+                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                }`}
+              >
+                {presetConfig.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right: save, shortcuts, AI */}
+        <div className="flex items-center gap-1.5">
+          {user && (
+            <button
+              type="button"
+              onClick={handleSaveSketch}
+              disabled={isEmpty || isSaving}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] px-3 text-xs font-medium text-[var(--foreground)] transition-all duration-150 enabled:hover:border-green-500 enabled:hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isSaving ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : isSaveSuccess || saveMessage === "Saved!" ? (
+                <Check size={14} className="text-green-500" />
+              ) : (
+                <Save size={14} />
+              )}
+              {isSaving ? "Saving…" : saveMessage || "Save"}
+            </button>
+          )}
+          <KeyboardShortcutsHint />
+          <button
+            type="button"
+            onClick={toggleResultDrawer}
+            className={`inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold transition-all duration-150 ${
+              isResultDrawerOpen
+                ? "border border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[var(--accent)]"
+                : "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-md shadow-[var(--accent)]/20 hover:shadow-lg hover:shadow-[var(--accent)]/25"
+            }`}
+          >
+            {isResultDrawerOpen ? <EyeOff size={14} /> : <Sparkles size={14} />}
+            {isResultDrawerOpen ? "Hide AI" : "AI Generate"}
+          </button>
+        </div>
+      </div>
+
+      {/* Row 2: Stroke + Zoom */}
+      <div className="flex items-center gap-2">
+        {/* Stroke settings */}
+        <div className="flex flex-1 items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--panel)] px-3 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+          <Palette
+            size={14}
+            className="shrink-0 text-[var(--muted-foreground)]"
+          />
+
+          {/* Brush size slider */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+              Size
+            </span>
+            <input
+              type="range"
+              min={1}
+              max={50}
+              value={brushSize}
+              disabled={!supportsStrokeControls}
+              onChange={(e) => setSize(Number(e.target.value))}
+              className="w-28 accent-[var(--accent)] disabled:opacity-30 xl:w-36"
+              aria-label="Brush size"
+            />
+            <span className="w-6 text-center font-mono text-xs text-[var(--foreground)]">
+              {brushSize}
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={undo}
-              disabled={!canUndo}
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm text-[var(--foreground)] transition enabled:hover:border-[var(--accent)] enabled:hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-45"
+          <div className="h-5 w-px bg-[var(--border)]" />
+
+          {/* Quick color swatches */}
+          <div className="flex items-center gap-1.5">
+            {QUICK_COLORS.map((color) => {
+              const isActive = brushColor.toLowerCase() === color.toLowerCase();
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setColor(color)}
+                  disabled={!supportsStrokeControls || activeTool === "eraser"}
+                  aria-label={`Color ${color}`}
+                  aria-pressed={isActive}
+                  className={`h-6 w-6 rounded-full border-2 transition-all duration-150 disabled:opacity-30 ${
+                    isActive
+                      ? "scale-110 border-[var(--accent)] shadow-md"
+                      : "border-transparent hover:scale-105 hover:border-[var(--border)]"
+                  } ${color === "#ffffff" ? "ring-1 ring-[var(--border)]" : ""}`}
+                  style={{ backgroundColor: color }}
+                />
+              );
+            })}
+
+            <div className="h-5 w-px bg-[var(--border)]" />
+
+            {/* Custom color picker */}
+            <label
+              className="relative flex h-6 w-6 cursor-pointer items-center justify-center rounded-full"
+              aria-label="Custom color"
             >
-              <RotateCcw size={16} />
-              Undo
-            </button>
-            <button
-              type="button"
-              onClick={redo}
-              disabled={!canRedo}
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm text-[var(--foreground)] transition enabled:hover:border-[var(--accent)] enabled:hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <RotateCw size={16} />
-              Redo
-            </button>
-            <button
-              type="button"
-              onClick={deleteSelected}
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            >
-              <Trash2 size={16} />
-              Delete Selected
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!isEmpty && window.confirm("Clear the current canvas?")) {
-                  clear();
-                }
-              }}
-              disabled={isEmpty}
-              className="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-sm text-rose-600 transition enabled:hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300"
-            >
-              <Trash2 size={16} />
-              New Page
-            </button>
-            {user && (
-              <button
-                type="button"
-                onClick={handleSaveSketch}
-                disabled={isEmpty || isSaving}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-elevated)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition enabled:hover:border-green-500 enabled:hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-45 dark:enabled:hover:text-green-400"
-              >
-                {isSaving ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : isSaveSuccess || saveMessage === "Saved!" ? (
-                  <Check size={16} className="text-green-500" />
-                ) : (
-                  <Save size={16} />
-                )}
-                {isSaving ? "Saving…" : saveMessage || "Save Sketch"}
-              </button>
-            )}
-            <KeyboardShortcutsHint />
-            <button
-              type="button"
-              onClick={toggleResultDrawer}
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-            >
-              <Eye size={16} />
-              {isResultDrawerOpen ? "Hide AI Preview" : "Show AI Preview"}
-            </button>
+              <span
+                className="h-6 w-6 rounded-full border-2 border-dashed border-[var(--border)]"
+                style={{ backgroundColor: brushColor }}
+              />
+              <input
+                type="color"
+                value={brushColor}
+                onChange={(e) => setColor(e.target.value)}
+                className="sr-only"
+                disabled={!supportsStrokeControls || activeTool === "eraser"}
+              />
+            </label>
+
+            <span className="ml-1 rounded-md bg-[var(--panel-elevated)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--muted-foreground)]">
+              {brushColor.toUpperCase()}
+            </span>
           </div>
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto]">
-          <div className="rounded-[24px] border border-[var(--border)] bg-[var(--panel-elevated)] p-3">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-              Page Size
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {pagePresets.map(([preset, presetConfig]) => {
-                const isActive = pagePreset === preset;
-
-                return (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setPagePreset(preset)}
-                    className={`rounded-full border px-4 py-2 text-sm transition ${
-                      isActive
-                        ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
-                        : "border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)] hover:border-[var(--accent)]/40"
-                    }`}
-                  >
-                    {presetConfig.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[var(--border)] bg-[var(--panel-elevated)] p-3">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-              Stroke Settings
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-4">
-              <label className="flex min-w-[220px] flex-1 items-center gap-3 text-sm text-[var(--foreground)]">
-                <span className="shrink-0">Size</span>
-                <input
-                  type="range"
-                  min={1}
-                  max={50}
-                  value={brushSize}
-                  disabled={!supportsStrokeControls}
-                  onChange={(event) => setSize(Number(event.target.value))}
-                  className="w-full accent-[var(--accent)] disabled:opacity-40"
-                />
-                <span className="w-10 text-right text-[var(--muted-foreground)]">
-                  {brushSize}
-                </span>
-              </label>
-
-              <label className="flex items-center gap-3 text-sm text-[var(--foreground)]">
-                <span>Color</span>
-                <input
-                  type="color"
-                  value={brushColor}
-                  disabled={!supportsStrokeControls || activeTool === "eraser"}
-                  onChange={(event) => setColor(event.target.value)}
-                  className="h-10 w-14 rounded-xl border border-[var(--border)] bg-transparent disabled:opacity-40"
-                />
-                <span className="rounded-full border border-[var(--border)] bg-[var(--panel)] px-3 py-1.5 font-mono text-xs text-[var(--muted-foreground)]">
-                  {brushColor.toUpperCase()}
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[var(--border)] bg-[var(--panel-elevated)] p-3">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-              Zoom
-            </p>
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={zoomOut}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                aria-label="Zoom out"
-              >
-                <Minus size={16} />
-              </button>
-              <span className="min-w-[68px] text-center text-sm font-medium text-[var(--foreground)]">
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <button
-                type="button"
-                onClick={zoomIn}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                aria-label="Zoom in"
-              >
-                <Plus size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={resetZoom}
-                className="rounded-full border border-[var(--border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              >
-                Fit
-              </button>
-            </div>
-          </div>
+        {/* Zoom controls */}
+        <div className="flex items-center gap-1 rounded-2xl border border-[var(--border)] bg-[var(--panel)] px-2 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+          <button
+            type="button"
+            onClick={zoomOut}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--panel-elevated)] hover:text-[var(--foreground)]"
+            aria-label="Zoom out"
+          >
+            <Minus size={14} />
+          </button>
+          <span className="min-w-[52px] text-center text-xs font-medium text-[var(--foreground)]">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={zoomIn}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--panel-elevated)] hover:text-[var(--foreground)]"
+            aria-label="Zoom in"
+          >
+            <Plus size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={resetZoom}
+            className="rounded-lg px-2 py-1 text-[11px] font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--panel-elevated)] hover:text-[var(--foreground)]"
+          >
+            Fit
+          </button>
         </div>
       </div>
     </section>
   );
+}
+
+/* ── Shared small icon button ── */
+function ActionBtn({
+  icon: Icon,
+  label,
+  onClick,
+  disabled,
+  shortcut,
+  tone = "default",
+}: {
+  icon: typeof Save;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  shortcut?: string;
+  tone?: "default" | "danger";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={shortcut ? `${label} (${shortcut})` : label}
+      className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-35 ${
+        tone === "danger"
+          ? "text-rose-500 hover:bg-rose-500/10 dark:text-rose-400"
+          : "text-[var(--muted-foreground)] hover:bg-[var(--panel-elevated)] hover:text-[var(--foreground)]"
+      }`}
+    >
+      <Icon size={16} strokeWidth={1.8} />
+    </button>
+  );
+}
+
+function Divider() {
+  return <div className="mx-0.5 h-5 w-px bg-[var(--border)]" />;
 }

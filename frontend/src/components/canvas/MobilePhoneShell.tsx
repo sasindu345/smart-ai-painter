@@ -7,9 +7,7 @@ import {
   Circle,
   Eraser,
   Hand,
-  Keyboard,
   Loader2,
-  Maximize2,
   MousePointer2,
   Palette,
   Pencil,
@@ -23,8 +21,6 @@ import {
   Sparkles,
   Trash2,
   Wrench,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 
 import type { UseCanvasReturn } from "@/hooks/useCanvas";
@@ -36,7 +32,7 @@ import { PAGE_PRESET_SIZES, type CanvasTool } from "@/types/canvas";
 import { ResultPanel } from "../result/ResultPanel";
 import { BottomSheet } from "../shared/BottomSheet";
 
-type Sheet = "tools" | "brush" | "generate" | "more" | "shortcuts" | null;
+type Sheet = "tools" | "brush" | "generate" | "more" | null;
 
 const DRAWING_TOOLS: Array<{
   id: CanvasTool;
@@ -45,7 +41,7 @@ const DRAWING_TOOLS: Array<{
 }> = [
   { id: "brush", label: "Brush", icon: Pencil },
   { id: "eraser", label: "Eraser", icon: Eraser },
-  { id: "rect", label: "Rectangle", icon: RectangleHorizontal },
+  { id: "rect", label: "Rect", icon: RectangleHorizontal },
   { id: "ellipse", label: "Ellipse", icon: Circle },
   { id: "line", label: "Line", icon: Slash },
   { id: "select", label: "Select", icon: MousePointer2 },
@@ -63,31 +59,6 @@ const QUICK_COLORS = [
   "#7c3aed",
   "#db2777",
   "#ffffff",
-];
-
-const SHORTCUT_GROUPS: Array<{
-  group: string;
-  items: Array<{ keys: string[]; description: string }>;
-}> = [
-  {
-    group: "History",
-    items: [
-      { keys: ["⌘/Ctrl", "Z"], description: "Undo" },
-      { keys: ["⌘/Ctrl", "⇧", "Z"], description: "Redo" },
-    ],
-  },
-  {
-    group: "Tools",
-    items: [
-      { keys: ["B"], description: "Brush" },
-      { keys: ["E"], description: "Eraser" },
-      { keys: ["R"], description: "Rectangle" },
-      { keys: ["O"], description: "Ellipse" },
-      { keys: ["L"], description: "Line" },
-      { keys: ["V"], description: "Select" },
-      { keys: ["H"], description: "Pan" },
-    ],
-  },
 ];
 
 const pagePresets = Object.entries(PAGE_PRESET_SIZES) as Array<
@@ -112,7 +83,6 @@ export function MobilePhoneShell({
   const activeTool = useCanvasStore((s) => s.activeTool);
   const brushColor = useCanvasStore((s) => s.brushColor);
   const brushSize = useCanvasStore((s) => s.brushSize);
-  const zoomLevel = useCanvasStore((s) => s.zoomLevel);
   const pagePreset = useCanvasStore((s) => s.pagePreset);
   const pageWidth = useCanvasStore((s) => s.pageWidth);
   const pageHeight = useCanvasStore((s) => s.pageHeight);
@@ -169,59 +139,13 @@ export function MobilePhoneShell({
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-73px)] flex-1 flex-col bg-[var(--background)]">
-      {/* Compact status strip */}
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--panel)]/85 px-4 py-2 backdrop-blur-xl">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
-            <ActiveToolIcon size={16} />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-              {pagePreset} · {Math.round(zoomLevel * 100)}%
-            </p>
-            <p className="truncate text-sm font-semibold capitalize text-[var(--foreground)]">
-              {activeToolMeta?.label ?? activeTool}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={canvas.undo}
-            disabled={!canUndo}
-            aria-label="Undo"
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--panel-elevated)] text-[var(--foreground)] transition enabled:hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <RotateCcw size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={canvas.redo}
-            disabled={!canRedo}
-            aria-label="Redo"
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--panel-elevated)] text-[var(--foreground)] transition enabled:hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <RotateCw size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={canvas.resetZoom}
-            aria-label="Fit to screen"
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--panel-elevated)] text-[var(--foreground)] transition hover:border-[var(--accent)]"
-          >
-            <Maximize2 size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Full-bleed canvas viewport */}
+    <div className="flex flex-1 flex-col">
+      {/* Canvas — takes all remaining space */}
       <main className="relative flex-1 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center overflow-auto p-3">
+        <div className="absolute inset-0 flex items-center justify-center overflow-auto bg-[var(--background)] p-1.5">
           <div
             ref={canvas.surfaceRef}
-            className="canvas-surface relative w-full max-w-full overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--canvas)] shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+            className="canvas-surface relative w-full max-w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--canvas)] shadow-[0_8px_30px_rgba(15,23,42,0.12)]"
             style={{ aspectRatio: `${pageWidth} / ${pageHeight}` }}
           >
             <canvas
@@ -236,43 +160,45 @@ export function MobilePhoneShell({
 
         {loadingSketch && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--panel)]/80 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2
-                size={28}
-                className="animate-spin text-[var(--accent)]"
-              />
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Loading sketch…
-              </p>
-            </div>
+            <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
           </div>
         )}
 
-        {/* Floating zoom controls */}
-        <div className="pointer-events-none absolute right-3 top-3 flex flex-col gap-2">
+        {/* Floating: undo/redo top-left */}
+        <div className="pointer-events-none absolute left-2 top-2 flex gap-1.5">
           <button
             type="button"
-            onClick={canvas.zoomIn}
-            aria-label="Zoom in"
-            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border)] bg-[color:var(--panel)]/92 text-[var(--foreground)] shadow-lg backdrop-blur-xl transition active:scale-95"
+            onClick={canvas.undo}
+            disabled={!canUndo}
+            aria-label="Undo"
+            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[color:var(--panel)]/90 text-[var(--foreground)] shadow backdrop-blur-xl transition active:scale-95 disabled:opacity-35"
           >
-            <ZoomIn size={18} />
+            <RotateCcw size={15} />
           </button>
           <button
             type="button"
-            onClick={canvas.zoomOut}
-            aria-label="Zoom out"
-            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border)] bg-[color:var(--panel)]/92 text-[var(--foreground)] shadow-lg backdrop-blur-xl transition active:scale-95"
+            onClick={canvas.redo}
+            disabled={!canRedo}
+            aria-label="Redo"
+            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[color:var(--panel)]/90 text-[var(--foreground)] shadow backdrop-blur-xl transition active:scale-95 disabled:opacity-35"
           >
-            <ZoomOut size={18} />
+            <RotateCw size={15} />
           </button>
+        </div>
+
+        {/* Floating: active tool badge top-center */}
+        <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2">
+          <span className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[color:var(--panel)]/90 px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] shadow backdrop-blur-xl">
+            <ActiveToolIcon size={12} />
+            {activeToolMeta?.label ?? activeTool}
+          </span>
         </div>
       </main>
 
-      {/* Bottom action dock */}
+      {/* Bottom dock — compact, always visible */}
       <nav
         aria-label="Canvas actions"
-        className="sticky bottom-0 z-20 flex items-stretch justify-between gap-1 border-t border-[var(--border)] bg-[color:var(--panel)]/95 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl"
+        className="z-20 flex items-center gap-0.5 border-t border-[var(--border)] bg-[color:var(--panel)]/95 px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl"
       >
         <DockButton
           icon={Wrench}
@@ -283,6 +209,12 @@ export function MobilePhoneShell({
           icon={Palette}
           label="Brush"
           onClick={() => setSheet("brush")}
+          badge={
+            <span
+              className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border border-[var(--panel)]"
+              style={{ backgroundColor: brushColor }}
+            />
+          }
         />
         <DockButton
           icon={Sparkles}
@@ -304,7 +236,7 @@ export function MobilePhoneShell({
         title="Drawing tools"
         description="Pick a tool"
       >
-        <div className="grid grid-cols-3 gap-3 pb-2">
+        <div className="grid grid-cols-4 gap-2 pb-2">
           {DRAWING_TOOLS.map(({ id, label, icon: Icon }) => {
             const isActive = activeTool === id;
             return (
@@ -315,13 +247,13 @@ export function MobilePhoneShell({
                   setTool(id);
                   closeSheet();
                 }}
-                className={`flex flex-col items-center gap-2 rounded-3xl border px-3 py-5 text-sm font-medium transition active:scale-95 ${
+                className={`flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-3 text-xs font-medium transition active:scale-95 ${
                   isActive
                     ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg shadow-[var(--accent)]/25"
                     : "border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)]"
                 }`}
               >
-                <Icon size={22} />
+                <Icon size={20} />
                 {label}
               </button>
             );
@@ -333,37 +265,36 @@ export function MobilePhoneShell({
       <BottomSheet
         open={sheet === "brush"}
         onClose={closeSheet}
-        title="Brush settings"
+        title="Brush & page"
         description="Color, size & page"
       >
-        <div className="space-y-6 pb-2">
+        <div className="space-y-5 pb-2">
           <section>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-              Quick colors
+              Color
             </p>
-            <div className="flex flex-wrap gap-3">
-              {QUICK_COLORS.map((color) => {
-                const isActive =
-                  brushColor.toLowerCase() === color.toLowerCase();
+            <div className="flex flex-wrap gap-2.5">
+              {QUICK_COLORS.map((c) => {
+                const isActive = brushColor.toLowerCase() === c.toLowerCase();
                 return (
                   <button
-                    key={color}
+                    key={c}
                     type="button"
-                    onClick={() => setColor(color)}
-                    aria-label={`Select color ${color}`}
+                    onClick={() => setColor(c)}
+                    aria-label={`Color ${c}`}
                     aria-pressed={isActive}
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl border-2 transition active:scale-95 ${
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 transition active:scale-95 ${
                       isActive
-                        ? "border-[var(--accent)] shadow-lg"
+                        ? "border-[var(--accent)] shadow-md"
                         : "border-[var(--border)]"
                     }`}
-                    style={{ backgroundColor: color }}
+                    style={{ backgroundColor: c }}
                   >
                     {isActive && (
                       <Check
-                        size={18}
+                        size={14}
                         className={
-                          color === "#ffffff"
+                          c === "#ffffff"
                             ? "text-[var(--foreground)]"
                             : "text-white"
                         }
@@ -372,25 +303,25 @@ export function MobilePhoneShell({
                   </button>
                 );
               })}
-              <label className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] text-[var(--muted-foreground)]">
-                <Plus size={18} />
+              <label className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-[var(--border)] text-[var(--muted-foreground)]">
+                <Plus size={14} />
                 <input
                   type="color"
                   value={brushColor}
                   onChange={(e) => setColor(e.target.value)}
                   className="sr-only"
-                  aria-label="Pick custom color"
+                  aria-label="Custom color"
                 />
               </label>
             </div>
           </section>
 
           <section>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-1.5 flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                Brush size
+                Size
               </p>
-              <span className="font-mono text-sm text-[var(--foreground)]">
+              <span className="font-mono text-xs text-[var(--foreground)]">
                 {brushSize}px
               </span>
             </div>
@@ -403,22 +334,11 @@ export function MobilePhoneShell({
               className="h-2 w-full accent-[var(--accent)]"
               aria-label="Brush size"
             />
-            <div className="mt-3 flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-4">
-              <div
-                className="rounded-full"
-                style={{
-                  width: `${brushSize * 2}px`,
-                  height: `${brushSize * 2}px`,
-                  backgroundColor:
-                    activeTool === "eraser" ? "#cbd5e1" : brushColor,
-                }}
-              />
-            </div>
           </section>
 
           <section>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-              Page size
+              Page
             </p>
             <div className="grid grid-cols-3 gap-2">
               {pagePresets.map(([preset, presetConfig]) => {
@@ -428,7 +348,7 @@ export function MobilePhoneShell({
                     key={preset}
                     type="button"
                     onClick={() => setPagePreset(preset)}
-                    className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${
+                    className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                       isActive
                         ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
                         : "border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)]"
@@ -458,31 +378,13 @@ export function MobilePhoneShell({
       <BottomSheet
         open={sheet === "more"}
         onClose={closeSheet}
-        title="More actions"
-        description="History · Save · Help"
+        title="More"
+        description="Actions"
       >
         <div className="space-y-2 pb-2">
           <ActionRow
-            icon={RotateCcw}
-            label="Undo last action"
-            onClick={() => {
-              canvas.undo();
-              closeSheet();
-            }}
-            disabled={!canUndo}
-          />
-          <ActionRow
-            icon={RotateCw}
-            label="Redo"
-            onClick={() => {
-              canvas.redo();
-              closeSheet();
-            }}
-            disabled={!canRedo}
-          />
-          <ActionRow
             icon={Trash2}
-            label="Delete selected object"
+            label="Delete selected"
             onClick={() => {
               canvas.deleteSelected();
               closeSheet();
@@ -500,61 +402,12 @@ export function MobilePhoneShell({
               icon={
                 isSaving ? Loader2 : saveMessage === "Saved!" ? Check : Save
               }
-              label={
-                isSaving
-                  ? "Saving sketch…"
-                  : saveMessage || "Save sketch to gallery"
-              }
+              label={isSaving ? "Saving…" : saveMessage || "Save sketch"}
               disabled={isEmpty || isSaving}
               spinning={isSaving}
               onClick={handleSaveSketch}
             />
           )}
-          <ActionRow
-            icon={Keyboard}
-            label="Keyboard shortcuts"
-            onClick={() => setSheet("shortcuts")}
-          />
-        </div>
-      </BottomSheet>
-
-      {/* Shortcuts sheet */}
-      <BottomSheet
-        open={sheet === "shortcuts"}
-        onClose={() => setSheet("more")}
-        title="Keyboard shortcuts"
-        description="Quick reference"
-      >
-        <div className="space-y-5 pb-2">
-          {SHORTCUT_GROUPS.map((group) => (
-            <div key={group.group}>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                {group.group}
-              </p>
-              <ul className="space-y-1.5">
-                {group.items.map((shortcut) => (
-                  <li
-                    key={shortcut.description}
-                    className="flex items-center justify-between gap-3 rounded-xl bg-[var(--panel)] px-3 py-2"
-                  >
-                    <span className="text-sm text-[var(--foreground)]">
-                      {shortcut.description}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      {shortcut.keys.map((key, index) => (
-                        <kbd
-                          key={`${shortcut.description}-${index}`}
-                          className="rounded-md border border-[var(--border)] bg-[var(--panel-elevated)] px-1.5 py-0.5 font-mono text-[11px] font-medium text-[var(--foreground)]"
-                        >
-                          {key}
-                        </kbd>
-                      ))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
         </div>
       </BottomSheet>
     </div>
@@ -566,6 +419,7 @@ interface DockButtonProps {
   label: string;
   onClick: () => void;
   highlight?: boolean;
+  badge?: React.ReactNode;
 }
 
 function DockButton({
@@ -573,19 +427,21 @@ function DockButton({
   label,
   onClick,
   highlight,
+  badge,
 }: DockButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition active:scale-95 ${
+      className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition active:scale-95 ${
         highlight
           ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-md"
-          : "text-[var(--foreground)] hover:bg-[var(--panel-elevated)]"
+          : "text-[var(--foreground)]"
       }`}
     >
-      <Icon size={20} />
+      <Icon size={18} />
       {label}
+      {badge}
     </button>
   );
 }
@@ -613,13 +469,13 @@ function ActionRow({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left text-sm font-medium transition active:scale-[0.98] ${
+      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition active:scale-[0.98] ${
         danger
           ? "border-rose-300 bg-rose-50 text-rose-600 enabled:hover:bg-rose-100 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300"
-          : "border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)] enabled:hover:border-[var(--accent)]/40"
+          : "border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)]"
       } disabled:cursor-not-allowed disabled:opacity-45`}
     >
-      <Icon size={18} className={spinning ? "animate-spin" : undefined} />
+      <Icon size={16} className={spinning ? "animate-spin" : undefined} />
       {label}
     </button>
   );

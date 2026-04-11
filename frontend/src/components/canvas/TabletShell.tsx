@@ -133,25 +133,10 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-73px)] flex-1 flex-col bg-[var(--background)]">
-      {/* Tablet top bar — primary actions only */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[color:var(--panel)]/85 px-4 py-3 backdrop-blur-xl">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-md">
-            <Sparkles size={18} />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
-              Canvas Studio · Tablet
-            </p>
-            <h1 className="truncate text-base font-semibold text-[var(--foreground)]">
-              {pagePreset} · {pageWidth} × {pageHeight} ·{" "}
-              {Math.round(zoomLevel * 100)}%
-            </h1>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
+    <div className="flex flex-1 flex-col bg-[var(--background)]">
+      {/* Compact action bar — TopBar is already rendered by CanvasWorkspaceShell */}
+      <header className="z-20 flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[color:var(--panel)]/85 px-3 py-2 backdrop-blur-xl">
+        <div className="flex items-center gap-1.5">
           <IconButton
             label="Undo"
             disabled={!canUndo}
@@ -164,6 +149,9 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
             onClick={canvas.redo}
             icon={RotateCw}
           />
+
+          <div className="mx-1 h-6 w-px bg-[var(--border)]" />
+
           <IconButton
             label="Delete selected"
             onClick={canvas.deleteSelected}
@@ -176,19 +164,27 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
             icon={Trash2}
             tone="danger"
           />
+        </div>
+
+        <span className="text-xs font-medium text-[var(--muted-foreground)]">
+          {pagePreset} · {pageWidth}×{pageHeight} ·{" "}
+          {Math.round(zoomLevel * 100)}%
+        </span>
+
+        <div className="flex items-center gap-2">
           {user && (
             <button
               type="button"
               onClick={handleSaveSketch}
               disabled={isEmpty || isSaving}
-              className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--panel-elevated)] px-4 text-sm font-medium text-[var(--foreground)] transition enabled:hover:border-green-500 enabled:hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] px-3 text-sm font-medium text-[var(--foreground)] transition enabled:hover:border-green-500 enabled:hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-45"
             >
               {isSaving ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={15} className="animate-spin" />
               ) : saveMessage === "Saved!" ? (
-                <Check size={16} className="text-green-500" />
+                <Check size={15} className="text-green-500" />
               ) : (
-                <Save size={16} />
+                <Save size={15} />
               )}
               {isSaving ? "Saving" : saveMessage || "Save"}
             </button>
@@ -197,9 +193,9 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
             type="button"
             onClick={() => setAiPanelOpen((open) => !open)}
             aria-pressed={aiPanelOpen}
-            className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[var(--accent)] px-5 text-sm font-semibold text-[var(--accent-foreground)] shadow-md transition hover:opacity-90"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-foreground)] shadow-md transition hover:opacity-90"
           >
-            <Sparkles size={16} />
+            <Sparkles size={15} />
             {aiPanelOpen ? "Hide AI" : "AI Generate"}
           </button>
         </div>

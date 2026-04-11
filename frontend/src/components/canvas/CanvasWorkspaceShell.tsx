@@ -98,11 +98,10 @@ function CanvasShellInner({ device }: { device: DeviceType }) {
     loadSketch();
   }, [sketchId, canvas]);
 
-  // ——— Phone ———
+  // ——— Phone — no TopBar to maximize drawing space ———
   if (device === "phone") {
     return (
-      <div className="flex min-h-[100dvh] flex-col">
-        <TopBar />
+      <div className="flex h-[100dvh] flex-col">
         <MobilePhoneShell canvas={canvas} loadingSketch={loadingSketch} />
         <OnboardingHint />
       </div>
@@ -159,7 +158,7 @@ function CanvasShellInner({ device }: { device: DeviceType }) {
     <>
       <TopBar />
       <main className="min-h-screen bg-[var(--background)] px-4 py-5 pb-5 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-[1800px] gap-4">
+        <div className="mx-auto flex max-w-[1800px] gap-4 overflow-visible">
           <ToolDock />
           {sketchContent}
         </div>

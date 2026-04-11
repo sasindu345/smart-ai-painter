@@ -42,14 +42,9 @@ export function ToolDock() {
 
   return (
     <>
-      <aside className="sticky top-[92px] hidden h-[calc(100vh-110px)] w-[88px] shrink-0 rounded-[32px] border border-[var(--border)] bg-[var(--panel)] p-3 shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:flex lg:flex-col">
-        <div className="mb-3 rounded-[24px] border border-[var(--border)] bg-[var(--panel-elevated)] px-3 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--muted-foreground)]">
-            Tools
-          </p>
-        </div>
-
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+      {/* Desktop vertical rail */}
+      <aside className="sticky top-[92px] z-30 hidden h-[calc(100vh-110px)] w-[72px] shrink-0 overflow-visible rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.06)] lg:flex lg:flex-col">
+        <div className="flex flex-1 flex-col gap-1 overflow-visible">
           {tools.map(({ id, label, shortcut, icon: Icon, disabled }) => {
             const isActive = activeTool === id;
 
@@ -59,35 +54,35 @@ export function ToolDock() {
                 type="button"
                 disabled={disabled}
                 onClick={() => setTool(id)}
-                className={`group relative flex h-14 items-center justify-center rounded-2xl border transition ${
+                className={`group relative flex h-12 w-full items-center justify-center rounded-xl transition-all duration-150 ${
                   isActive
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg shadow-[var(--accent)]/25"
-                    : "border-[var(--border)] bg-[var(--panel-elevated)] text-[var(--foreground)] hover:border-[var(--accent)]/35 hover:text-[var(--accent)]"
-                } disabled:cursor-not-allowed disabled:opacity-45`}
+                    ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-md shadow-[var(--accent)]/20"
+                    : "text-[var(--muted-foreground)] hover:bg-[var(--panel-elevated)] hover:text-[var(--foreground)]"
+                } disabled:cursor-not-allowed disabled:opacity-35`}
                 aria-label={label}
-                title={`${label}${disabled ? " (coming soon)" : ` (${shortcut})`}`}
               >
-                <Icon size={18} />
-                <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 hidden -translate-y-1/2 rounded-full border border-[var(--border)] bg-[var(--panel)] px-3 py-1 text-xs text-[var(--foreground)] shadow-xl group-hover:block">
-                  {label} {disabled ? "Soon" : shortcut}
+                <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
+                {/* Tooltip flyout */}
+                <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-[var(--foreground)] px-2.5 py-1 text-[11px] font-medium text-[var(--background)] shadow-lg group-hover:block">
+                  {label}
+                  {!disabled && (
+                    <span className="ml-1.5 rounded bg-white/15 px-1 py-0.5 text-[10px]">
+                      {shortcut}
+                    </span>
+                  )}
+                  {disabled && (
+                    <span className="ml-1 text-[10px] opacity-60">Soon</span>
+                  )}
                 </span>
               </button>
             );
           })}
         </div>
-
-        <div className="mt-3 rounded-[24px] border border-[var(--border)] bg-[var(--panel-elevated)] px-3 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
-            Studio
-          </p>
-          <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-            Photoshop-style dock for workspace tools.
-          </p>
-        </div>
       </aside>
 
-      <div className="fixed bottom-4 left-1/2 z-20 w-[min(92vw,680px)] -translate-x-1/2 rounded-[28px] border border-[var(--border)] bg-[color:var(--panel)]/92 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-xl lg:hidden">
-        <div className="flex items-center justify-between gap-2 overflow-x-auto">
+      {/* Mobile bottom bar */}
+      <div className="fixed bottom-4 left-1/2 z-20 w-[min(92vw,600px)] -translate-x-1/2 rounded-2xl border border-[var(--border)] bg-[color:var(--panel)]/92 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl lg:hidden">
+        <div className="flex items-center justify-between gap-1 overflow-x-auto">
           {tools.map(({ id, label, icon: Icon, disabled }) => {
             const isActive = activeTool === id;
 
@@ -97,14 +92,14 @@ export function ToolDock() {
                 type="button"
                 disabled={disabled}
                 onClick={() => setTool(id)}
-                className={`flex min-w-[68px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition ${
+                className={`flex min-w-[56px] flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-[10px] transition-all duration-150 ${
                   isActive
                     ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
-                    : "text-[var(--foreground)]"
-                } disabled:cursor-not-allowed disabled:opacity-45`}
+                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                } disabled:cursor-not-allowed disabled:opacity-35`}
               >
-                <Icon size={16} />
-                <span>{label}</span>
+                <Icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
+                <span className="font-medium">{label}</span>
               </button>
             );
           })}

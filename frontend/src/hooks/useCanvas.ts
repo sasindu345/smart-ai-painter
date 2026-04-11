@@ -134,15 +134,16 @@ export const useCanvas = (): UseCanvasReturn => {
 
     brush.width = size;
     if (tool === "eraser") {
-      brush.color = "#000000";
+      // Use canvas background color for preview so eraser stroke looks like erasing
+      brush.color = (canvas.backgroundColor as string) || "#ffffff";
       brush.globalCompositeOperation = "destination-out";
+      // Preview layer uses source-over so the white stroke is visible during drawing
+      canvas.contextTop.globalCompositeOperation = "source-over";
     } else {
       brush.color = color;
       brush.globalCompositeOperation = "source-over";
+      canvas.contextTop.globalCompositeOperation = "source-over";
     }
-
-    canvas.contextTop.globalCompositeOperation =
-      brush.globalCompositeOperation ?? "source-over";
   }, [color, size, tool]);
 
   const updateObjectInteractivity = useCallback(() => {
