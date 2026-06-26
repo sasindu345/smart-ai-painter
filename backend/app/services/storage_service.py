@@ -1,139 +1,315 @@
-import base64
-import os
-import tempfile
+import logging
 import uuid
-
+import asyncio
 from fastapi import HTTPException, status
-from supabase import create_client
+from app.core.database import get_db_pool
+from app.services.cloudinary_service import upload_to_cloudinary, delete_from_cloudinary
 
-from app.core.config import settings
-
-
-def _get_supabase_client():
-    if not settings.supabase_url or not settings.supabase_service_role_key:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Supabase storage is not configured",
-        )
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+logger = logging.getLogger(__name__)
 
 
-def upload_generation(image_base64: str, user_id: str) -> str:
-    """Upload a base64 PNG image to Supabase Storage.
+# ---------------------------------------------------------------------------
+# Generations Storage & DB Operations
+# ---------------------------------------------------------------------------
 
-    Returns the public URL of the uploaded file.
-    """
-    client = _get_supabase_client()
-    bucket = settings.supabase_storage_bucket
-
-    file_name = f"{user_id}/{uuid.uuid4()}.png"
-    file_bytes = base64.b64decode(image_base64)
-    temp_path = None
-
+async def upload_generation(image_base64: str, user_id: str) -> str:
+    """Upload a base64 PNG image to Cloudinary. Returns the secure URL."""
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-            tmp.write(file_bytes)
-            temp_path = tmp.name
-
-        attempts = [
-            lambda: client.storage.from_(bucket).upload(
-                path=file_name,
-                file=temp_path,
-                file_options={"content-type": "image/png"},
-            ),
-            lambda: client.storage.from_(bucket).upload(
-                path=file_name,
-                file=file_bytes,
-                file_options={"content-type": "image/png"},
-            ),
-        ]
-
-        last_exc = None
-        for attempt in attempts:
-            try:
-                attempt()
-                last_exc = None
-                break
-            except Exception as exc:
-                last_exc = exc
-
-        if last_exc is not None:
-            with open(temp_path, "rb") as file_obj:
-                client.storage.from_(bucket).upload(
-                    path=file_name,
-                    file=file_obj,
-                    file_options={"content-type": "image/png"},
-                )
+        url = await asyncio.to_thread(
+            upload_to_cloudinary, image_base64, "generations"
+        )
+        return url
     except Exception as exc:
-        if "bucket not found" not in str(exc).lower():
-            raise
-
-        client.storage.create_bucket(bucket, {"public": True})
-
-        # Retry with the same compatibility sequence after bucket creation.
-        try:
-            client.storage.from_(bucket).upload(
-                path=file_name,
-                file=temp_path,
-                file_options={"content-type": "image/png"},
-            )
-        except Exception:
-            try:
-                client.storage.from_(bucket).upload(
-                    path=file_name,
-                    file=file_bytes,
-                    file_options={"content-type": "image/png"},
-                )
-            except Exception:
-                with open(temp_path, "rb") as file_obj:
-                    client.storage.from_(bucket).upload(
-                        path=file_name,
-                        file=file_obj,
-                        file_options={"content-type": "image/png"},
-                    )
-    finally:
-        if temp_path and os.path.exists(temp_path):
-            os.unlink(temp_path)
-
-    public_url = client.storage.from_(bucket).get_public_url(file_name)
-    return public_url
+        logger.error("Cloudinary upload failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to upload generation image: {exc}",
+        )
 
 
-def delete_generation_file(image_url: str) -> None:
-    """Delete an image file from Supabase Storage by its public URL."""
-    client = _get_supabase_client()
-    bucket = settings.supabase_storage_bucket
-
-    # Extract path from public URL: .../object/public/bucket-name/path
-    marker = f"/object/public/{bucket}/"
-    if marker in image_url:
-        file_path = image_url.split(marker, 1)[1]
-    else:
-        return
-
-    client.storage.from_(bucket).remove([file_path])
+async def delete_generation_file(image_url: str) -> None:
+    """Delete an image file from Cloudinary storage by its URL."""
+    try:
+        await asyncio.to_thread(delete_from_cloudinary, image_url)
+    except Exception as exc:
+        logger.warning("Cloudinary deletion failed for URL %s: %s", image_url, exc)
 
 
-def save_generation_record(
+async def save_generation_record(
     user_id: str,
     prompt: str,
     style: str,
     image_url: str,
 ) -> str:
-    """Insert a generation record into the database. Returns the record ID."""
-    client = _get_supabase_client()
+    """Insert a generation record into the Neon DB. Returns the record ID."""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO generations (user_id, prompt, style, image_url)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id
+                """,
+                uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
+                prompt,
+                style,
+                image_url,
+            )
+            if not row:
+                raise ValueError("No database row returned after insert.")
+            return str(row["id"])
+        except Exception as exc:
+            logger.error("DB generations insert failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to save generation record: {exc}",
+            )
 
-    result = (
-        client.table("generations")
-        .insert(
-            {
-                "user_id": user_id,
-                "prompt": prompt,
-                "style": style,
-                "image_url": image_url,
-            }
+
+async def get_user_generations(user_id: str, limit: int, offset: int) -> tuple[list[dict], int]:
+    """Retrieve user generations and total count from Neon DB."""
+    pool = await get_db_pool()
+    uid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    async with pool.acquire() as conn:
+        try:
+            total = await conn.fetchval(
+                "SELECT COUNT(*) FROM generations WHERE user_id = $1", uid
+            )
+            rows = await conn.fetch(
+                """
+                SELECT id, prompt, style, image_url, created_at 
+                FROM generations 
+                WHERE user_id = $1 
+                ORDER BY created_at DESC 
+                LIMIT $2 OFFSET $3
+                """,
+                uid, limit, offset
+            )
+            items = []
+            for r in rows:
+                d = dict(r)
+                d["id"] = str(d["id"])
+                items.append(d)
+            return items, total
+        except Exception as exc:
+            logger.error("DB generations fetch failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to fetch generations: {exc}",
+            )
+
+
+async def get_generation_by_id(generation_id: str) -> dict | None:
+    """Retrieve a single generation by ID from Neon DB."""
+    pool = await get_db_pool()
+    try:
+        gid = uuid.UUID(generation_id) if isinstance(generation_id, str) else generation_id
+    except ValueError:
+        return None
+        
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                """
+                SELECT id, prompt, style, image_url, created_at 
+                FROM generations 
+                WHERE id = $1
+                """,
+                gid
+            )
+            if row:
+                d = dict(row)
+                d["id"] = str(d["id"])
+                return d
+            return None
+        except Exception as exc:
+            logger.error("DB generation fetch failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to fetch generation record: {exc}",
+            )
+
+
+async def delete_user_generation(generation_id: str, user_id: str) -> bool:
+    """Delete a user generation from Neon DB and Cloudinary."""
+    pool = await get_db_pool()
+    try:
+        gid = uuid.UUID(generation_id) if isinstance(generation_id, str) else generation_id
+        uid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    except ValueError:
+        return False
+        
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                "SELECT image_url FROM generations WHERE id = $1 AND user_id = $2", gid, uid
+            )
+            if not row:
+                return False
+            image_url = row["image_url"]
+            
+            await conn.execute("DELETE FROM generations WHERE id = $1 AND user_id = $2", gid, uid)
+            await delete_generation_file(image_url)
+            return True
+        except Exception as exc:
+            logger.error("DB generation delete failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to delete generation: {exc}",
+            )
+
+
+# ---------------------------------------------------------------------------
+# Sketches Storage & DB Operations
+# ---------------------------------------------------------------------------
+
+async def upload_sketch(image_base64: str, user_id: str) -> str:
+    """Upload a base64 PNG sketch to Cloudinary. Returns the secure URL."""
+    try:
+        url = await asyncio.to_thread(
+            upload_to_cloudinary, image_base64, "sketches"
         )
-        .execute()
-    )
+        return url
+    except Exception as exc:
+        logger.error("Cloudinary sketch upload failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to upload sketch image: {exc}",
+        )
 
-    return result.data[0]["id"]
+
+async def save_sketch_record(
+    user_id: str,
+    title: str,
+    image_url: str,
+    page_preset: str,
+    page_width: int,
+    page_height: int,
+) -> dict:
+    """Insert a sketch record into the Neon DB. Returns the created row as a dict."""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO sketches (user_id, title, image_url, page_preset, page_width, page_height)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id, user_id, title, image_url, page_preset, page_width, page_height, created_at, updated_at
+                """,
+                uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
+                title,
+                image_url,
+                page_preset,
+                page_width,
+                page_height,
+            )
+            if not row:
+                raise ValueError("No database row returned after insert.")
+            
+            data = dict(row)
+            data["id"] = str(data["id"])
+            data["user_id"] = str(data["user_id"])
+            return data
+        except Exception as exc:
+            logger.error("DB sketches insert failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to save sketch record: {exc}",
+            )
+
+
+async def get_user_sketches(user_id: str, limit: int, offset: int) -> tuple[list[dict], int]:
+    """Retrieve user sketches and total count from Neon DB."""
+    pool = await get_db_pool()
+    uid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    async with pool.acquire() as conn:
+        try:
+            total = await conn.fetchval(
+                "SELECT COUNT(*) FROM sketches WHERE user_id = $1", uid
+            )
+            rows = await conn.fetch(
+                """
+                SELECT id, title, image_url, page_preset, page_width, page_height, created_at, updated_at 
+                FROM sketches 
+                WHERE user_id = $1 
+                ORDER BY created_at DESC 
+                LIMIT $2 OFFSET $3
+                """,
+                uid, limit, offset
+            )
+            items = []
+            for r in rows:
+                d = dict(r)
+                d["id"] = str(d["id"])
+                d["user_id"] = str(uid)
+                items.append(d)
+            return items, total
+        except Exception as exc:
+            logger.error("DB sketches fetch failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to fetch sketches: {exc}",
+            )
+
+
+async def get_sketch_by_id(sketch_id: str, user_id: str) -> dict | None:
+    """Retrieve a single user sketch by ID from Neon DB."""
+    pool = await get_db_pool()
+    try:
+        sid = uuid.UUID(sketch_id) if isinstance(sketch_id, str) else sketch_id
+        uid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    except ValueError:
+        return None
+        
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                """
+                SELECT id, title, image_url, page_preset, page_width, page_height, created_at, updated_at 
+                FROM sketches 
+                WHERE id = $1 AND user_id = $2
+                """,
+                sid, uid
+            )
+            if row:
+                d = dict(row)
+                d["id"] = str(d["id"])
+                d["user_id"] = str(uid)
+                return d
+            return None
+        except Exception as exc:
+            logger.error("DB sketch fetch failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to fetch sketch record: {exc}",
+            )
+
+
+async def delete_user_sketch(sketch_id: str, user_id: str) -> bool:
+    """Delete a sketch record from Neon DB and remove its image from Cloudinary."""
+    pool = await get_db_pool()
+    try:
+        sid = uuid.UUID(sketch_id) if isinstance(sketch_id, str) else sketch_id
+        uid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    except ValueError:
+        return False
+        
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                "SELECT image_url FROM sketches WHERE id = $1 AND user_id = $2", sid, uid
+            )
+            if not row:
+                return False
+            image_url = row["image_url"]
+            
+            await conn.execute("DELETE FROM sketches WHERE id = $1 AND user_id = $2", sid, uid)
+            await asyncio.to_thread(delete_from_cloudinary, image_url)
+            return True
+        except Exception as exc:
+            logger.error("DB sketch delete failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to delete sketch: {exc}",
+            )

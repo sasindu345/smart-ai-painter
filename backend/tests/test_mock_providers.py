@@ -71,17 +71,22 @@ async def test_mock_generation_provider():
 
 @pytest.mark.anyio
 async def test_end_to_end_mock_pipeline():
-    sketch = _make_sketch_b64(blank=False)
-    result = await generate_with_ai(
-        sketch_base64=sketch,
-        style="watercolor",
-        strength=0.7,
-        user_hint="a tree",
-        page_width=800,
-        page_height=600
-    )
+    from unittest.mock import patch
+    from app.core.config import settings
     
-    assert result.provider_name == "mock"
-    assert len(result.image_base64) > 0
-    assert result.scene.confidence == 0.85
-    assert result.needs_hint is False  # threshold is 0.5, confidence is 0.85
+    with patch.object(settings, "vlm_provider", "mock"), \
+         patch.object(settings, "ai_mode", "mock"):
+        sketch = _make_sketch_b64(blank=False)
+        result = await generate_with_ai(
+            sketch_base64=sketch,
+            style="watercolor",
+            strength=0.7,
+            user_hint="a tree",
+            page_width=800,
+            page_height=600
+        )
+        
+        assert result.provider_name == "mock"
+        assert len(result.image_base64) > 0
+        assert result.scene.confidence == 0.85
+        assert result.needs_hint is False  # threshold is 0.5, confidence is 0.85

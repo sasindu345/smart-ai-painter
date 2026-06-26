@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     # Confidence Threshold
     vlm_confidence_threshold: float = 0.5
 
+    # Database settings
+    database_url: str = ""
+
+    # Cloudinary settings
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+
     # Supabase
     supabase_url: str = ""
     supabase_service_role_key: str = ""
