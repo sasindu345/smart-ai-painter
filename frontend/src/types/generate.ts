@@ -10,7 +10,7 @@ export const ART_STYLES: { value: ArtStyle; label: string }[] = [
 
 export interface GenerateRequest {
   sketch_base64: string;
-  prompt: string;
+  prompt?: string;
   style: ArtStyle;
   strength: number;
   page_preset: string;
@@ -23,4 +23,7 @@ export interface GenerateResponse {
   generation_id: string;
   mode: string;
   provider: string;
+  scene_description?: string;
+  confidence?: number;
+  needs_hint?: boolean;
 }

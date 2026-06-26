@@ -15,10 +15,12 @@ import { useCanvasStore } from "@/store/canvasStore";
 import type { ArtStyle } from "@/types/generate";
 
 import { DownloadButton } from "./DownloadButton";
+import { SceneLabel } from "./SceneLabel";
 import { VariationThumbs } from "./VariationThumbs";
 
 export function ResultPanel() {
   const [prompt, setPrompt] = useState("");
+  const [showPromptInput, setShowPromptInput] = useState(false);
   const [style, setStyle] = useState<ArtStyle>("realistic");
   const [strength, setStrength] = useState(65);
   const [variations, setVariations] = useState<string[]>([]);
@@ -33,7 +35,7 @@ export function ResultPanel() {
   const { generate, data, isLoading, isError, error, reset } = useGenerate();
   const { addPrompt } = usePromptHistory();
 
-  const canGenerate = !isEmpty && prompt.trim().length > 0;
+  const canGenerate = !isEmpty;
 
   useEffect(() => {
     variationsRef.current = variations;
@@ -52,7 +54,7 @@ export function ResultPanel() {
     generate(
       {
         sketch_base64: base64,
-        prompt: trimmedPrompt,
+        prompt: trimmedPrompt || undefined,
         style,
         strength: strength / 100,
         page_preset: pagePreset,
@@ -61,12 +63,19 @@ export function ResultPanel() {
       },
       {
         onSuccess: (result) => {
-          addPrompt(trimmedPrompt);
+          if (trimmedPrompt) {
+            addPrompt(trimmedPrompt);
+          }
           const next = [...variationsRef.current, result.image_base64].slice(
             -3,
           );
           setVariations(next);
           setActiveVariation(next.length - 1);
+
+          // If the AI model needs a hint, show the prompt input
+          if (result.needs_hint) {
+            setShowPromptInput(true);
+          }
         },
       },
     );
@@ -88,7 +97,29 @@ export function ResultPanel() {
 
       {/* Controls */}
       <div className="space-y-4 rounded-[28px] border border-[var(--border)] bg-[var(--panel-elevated)] p-4">
-        <PromptInput value={prompt} onChange={setPrompt} />
+        {showPromptInput ? (
+          <div className="space-y-2">
+            <PromptInput value={prompt} onChange={setPrompt} />
+            <button
+              type="button"
+              onClick={() => {
+                setShowPromptInput(false);
+                setPrompt("");
+              }}
+              className="text-[11px] font-medium text-rose-500 hover:underline focus:outline-none"
+            >
+              Hide hint input
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowPromptInput(true)}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--accent)] hover:underline focus:outline-none"
+          >
+            + Add a hint to guide the AI (optional)
+          </button>
+        )}
         <StylePills value={style} onChange={setStyle} />
         <StrengthSlider value={strength} onChange={setStrength} />
         <GenerateButton
@@ -126,6 +157,20 @@ export function ResultPanel() {
             className="w-full rounded-2xl border border-[var(--border)]"
           />
 
+          {data?.scene_description && (
+            <SceneLabel
+              sceneDescription={data.scene_description}
+              confidence={data.confidence ?? 1.0}
+            />
+          )}
+
+          {data?.needs_hint && (
+            <p className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-1.5 text-center text-xs font-medium text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/50 dark:text-amber-300">
+              ⚠️ AI is not sure about this sketch. Consider adding a hint above
+              to improve results.
+            </p>
+          )}
+
           {data?.mode === "mock" && (
             <p className="rounded-xl bg-amber-100 px-3 py-1.5 text-center text-xs font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
               Mock mode — using placeholder generation
@@ -144,7 +189,7 @@ export function ResultPanel() {
         !isLoading && (
           <EmptyState
             title="Generated artwork will appear here"
-            description="Draw something on the canvas, type a prompt, then hit Generate to see AI-powered results."
+            description="Draw something on the canvas, select a style, then hit Generate to see AI-powered results."
           />
         )
       )}
