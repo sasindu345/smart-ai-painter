@@ -59,7 +59,7 @@ class TestGenerateEndpoint:
         )
         assert resp.status_code == 400
 
-    def test_empty_prompt_rejected(self):
+    def test_empty_prompt_allowed(self):
         resp = client.post(
             "/api/v1/generate/",
             json={
@@ -72,22 +72,14 @@ class TestGenerateEndpoint:
                 "page_height": 1024,
             },
         )
-        assert resp.status_code == 422  # Pydantic validation error
-
-    def test_prompt_over_200_chars_rejected(self):
-        resp = client.post(
-            "/api/v1/generate/",
-            json={
-                "sketch_base64": _make_sketch_b64(),
-                "prompt": "x" * 201,
-                "style": "realistic",
-                "strength": 0.5,
-                "page_preset": "square",
-                "page_width": 1024,
-                "page_height": 1024,
-            },
-        )
-        assert resp.status_code == 422
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["mode"] == "mock"
+        assert data["provider"] == "mock"
+        assert len(data["image_base64"]) > 0
+        assert "scene_description" in data
+        assert "confidence" in data
+        assert "needs_hint" in data
 
     def test_strength_out_of_range_rejected(self):
         resp = client.post(

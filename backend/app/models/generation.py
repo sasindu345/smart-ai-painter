@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 class GenerateRequest(BaseModel):
     sketch_base64: str
-    prompt: str = Field(min_length=1, max_length=200)
+    prompt: str = ""                              # OPTIONAL — empty = VLM-driven
     style: str = "realistic"
     strength: float = Field(default=0.65, ge=0, le=1)
     page_preset: str = "landscape"
@@ -14,5 +14,8 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     image_base64: str
     generation_id: str
-    mode: str  # "mock" or "huggingface"
-    provider: str  # provider name
+    mode: str                                     # "mock" or "replicate"
+    provider: str                                 # provider name
+    scene_description: str = ""                   # VLM interpretation (display to user)
+    confidence: float = 1.0                       # VLM confidence score
+    needs_hint: bool = False                      # True if confidence < threshold

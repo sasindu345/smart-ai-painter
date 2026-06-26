@@ -16,10 +16,18 @@ class Settings(BaseSettings):
     ]
 
     # AI generation settings
-    ai_mode: Literal["mock", "huggingface"] = "mock"
-    hf_api_token: str = ""
-    hf_model_id: str = "stabilityai/stable-diffusion-xl-base-1.0"
-    hf_timeout_seconds: int = 120
+    ai_mode: Literal["mock", "local_diffusers", "replicate"] = "mock"
+    local_diffusers_url: str = ""
+    replicate_api_token: str = ""
+    replicate_model_id: str = "jagilley/controlnet-scribble"
+
+    # Vision (VLM) settings
+    vlm_provider: Literal["mock", "gemini"] = "mock"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
+
+    # Confidence Threshold
+    vlm_confidence_threshold: float = 0.5
 
     # Supabase
     supabase_url: str = ""
