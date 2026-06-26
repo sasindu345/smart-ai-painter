@@ -3,22 +3,13 @@
 import { useMutation } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/api";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
 import type { GenerateRequest, GenerateResponse } from "@/types/generate";
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  try {
-    const supabase = createSupabaseBrowserClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      return { Authorization: `Bearer ${session.access_token}` };
-    }
-  } catch {
-    // Not authenticated — generate without saving
-  }
-  return {};
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
 }
 
 export function useGenerate() {

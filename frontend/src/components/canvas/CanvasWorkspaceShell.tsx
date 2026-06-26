@@ -13,7 +13,6 @@ import { ToolDock } from "@/components/canvas/ToolDock";
 import { useCanvas } from "@/hooks/useCanvas";
 import { useDeviceType, type DeviceType } from "@/hooks/useDeviceType";
 import { apiRequest } from "@/lib/api";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { useCanvasStore } from "@/store/canvasStore";
 import { PAGE_PRESET_SIZES } from "@/types/canvas";
 
@@ -63,13 +62,13 @@ function CanvasShellInner({ device }: { device: DeviceType }) {
 
     async function loadSketch() {
       try {
-        const supabase = createSupabaseBrowserClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("auth_token")
+            : null;
         const headers: Record<string, string> = {};
-        if (session?.access_token) {
-          headers.Authorization = `Bearer ${session.access_token}`;
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
         }
 
         const sketch = await apiRequest<SketchData>(

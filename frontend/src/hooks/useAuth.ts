@@ -2,64 +2,108 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import type { Session, User } from "@supabase/supabase-js";
+// Local Auth types replacing Supabase types
+export interface AuthUser {
+  id: string;
+  email: string;
+}
 
-import { createSupabaseBrowserClient } from "@/lib/supabase";
+export interface AuthSession {
+  access_token: string;
+  user: AuthUser;
+}
 
-const supabase = createSupabaseBrowserClient();
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth
-      .getSession()
-      .then(
-        ({ data: { session: s } }: { data: { session: Session | null } }) => {
-          setSession(s);
-          setUser(s?.user ?? null);
-          setLoading(false);
+  const fetchMe = useCallback(async (token: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: string, s: Session | null) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        const mockUser: AuthUser = { id: userData.id, email: userData.email };
+        setUser(mockUser);
+        setSession({ access_token: token, user: mockUser });
+      } else {
+        // Token is invalid/expired
+        localStorage.removeItem("auth_token");
+        setUser(null);
+        setSession(null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch current user:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    if (token) {
+      fetchMe(token);
+    } else {
+      setLoading(false);
+    }
+  }, [fetchMe]);
+
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     });
-    if (error) throw error;
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail ?? "Sign in failed");
+    }
+
+    const data = await res.json();
+    localStorage.setItem("auth_token", data.access_token);
+    const mockUser: AuthUser = { id: data.user.id, email: data.user.email };
+    setUser(mockUser);
+    setSession({ access_token: data.access_token, user: mockUser });
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    const res = await fetch(`${API_BASE}/api/v1/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail ?? "Sign up failed");
+    }
+
+    const data = await res.json();
+    localStorage.setItem("auth_token", data.access_token);
+    const mockUser: AuthUser = { id: data.user.id, email: data.user.email };
+    setUser(mockUser);
+    setSession({ access_token: data.access_token, user: mockUser });
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/canvas` },
-    });
-    if (error) throw error;
+    throw new Error(
+      "Google sign-in is disabled. Please use email and password.",
+    );
   }, []);
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    localStorage.removeItem("auth_token");
+    setUser(null);
+    setSession(null);
   }, []);
 
   return {

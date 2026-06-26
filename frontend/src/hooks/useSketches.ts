@@ -7,7 +7,6 @@ import {
 } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/api";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
 import type { Sketch } from "@/types/sketch";
 
 interface SketchApiItem {
@@ -44,12 +43,10 @@ function mapItem(item: SketchApiItem): Sketch {
 const PAGE_SIZE = 20;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const supabase = createSupabaseBrowserClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) return {};
-  return { Authorization: `Bearer ${session.access_token}` };
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
 }
 
 export function useSketches() {

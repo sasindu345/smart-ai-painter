@@ -8,6 +8,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "Smart AI Painter API"
     api_version: str = "1.0.0"
+    secret_key: str = ""
     allowed_origins: Annotated[list[str], NoDecode] = [
         "http://localhost:3000",
         "http://localhost:3001",
