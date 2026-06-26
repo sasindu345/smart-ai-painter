@@ -46,9 +46,9 @@ async def generate_image(
         try:
             payload = verify_supabase_token(credentials.credentials)
             user_id = payload["sub"]
-            image_url = upload_generation(result.image_base64, user_id)
+            image_url = await upload_generation(result.image_base64, user_id)
             prompt_to_save = req.prompt if req.prompt else result.scene.subject
-            generation_id = save_generation_record(
+            generation_id = await save_generation_record(
                 user_id=user_id,
                 prompt=prompt_to_save,
                 style=req.style,

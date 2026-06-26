@@ -44,22 +44,10 @@ MOCK_GALLERY_DATA = [
 
 
 class TestGalleryEndpoints:
-    @patch("app.api.v1.routes.gallery._get_supabase")
-    def test_get_gallery_success(self, mock_supabase):
+    @patch("app.api.v1.routes.gallery.get_user_generations")
+    def test_get_gallery_success(self, mock_get):
         """GET /api/v1/gallery/ returns paginated user generations."""
-        mock_client = MagicMock()
-        mock_supabase.return_value = mock_client
-
-        # Mock count query
-        count_result = MagicMock()
-        count_result.count = 2
-        mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value = count_result
-
-        # Mock data query — need separate chain for order/range
-        data_result = MagicMock()
-        data_result.data = MOCK_GALLERY_DATA
-        chain = mock_client.table.return_value.select.return_value
-        chain.eq.return_value.order.return_value.range.return_value.execute.return_value = data_result
+        mock_get.return_value = (MOCK_GALLERY_DATA, 2)
 
         resp = client.get("/api/v1/gallery/")
         assert resp.status_code == 200
@@ -72,20 +60,10 @@ class TestGalleryEndpoints:
         assert body["items"][0]["id"] == "gen-1"
         assert body["items"][0]["image_url"] == "https://example.com/img1.png"
 
-    @patch("app.api.v1.routes.gallery._get_supabase")
-    def test_get_gallery_pagination(self, mock_supabase):
+    @patch("app.api.v1.routes.gallery.get_user_generations")
+    def test_get_gallery_pagination(self, mock_get):
         """GET /api/v1/gallery/?page=1&limit=1 shows has_more=true when more exist."""
-        mock_client = MagicMock()
-        mock_supabase.return_value = mock_client
-
-        count_result = MagicMock()
-        count_result.count = 2
-        mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value = count_result
-
-        data_result = MagicMock()
-        data_result.data = [MOCK_GALLERY_DATA[0]]
-        chain = mock_client.table.return_value.select.return_value
-        chain.eq.return_value.order.return_value.range.return_value.execute.return_value = data_result
+        mock_get.return_value = ([MOCK_GALLERY_DATA[0]], 2)
 
         resp = client.get("/api/v1/gallery/?page=1&limit=1")
         assert resp.status_code == 200
@@ -93,49 +71,20 @@ class TestGalleryEndpoints:
         assert body["has_more"] is True
         assert len(body["items"]) == 1
 
-    @patch("app.api.v1.routes.gallery.delete_generation_file")
-    @patch("app.api.v1.routes.gallery._get_supabase")
-    def test_delete_generation_success(self, mock_supabase, mock_delete_file):
+    @patch("app.api.v1.routes.gallery.delete_user_generation")
+    def test_delete_generation_success(self, mock_delete):
         """DELETE /api/v1/gallery/{id} removes the record and file."""
-        mock_client = MagicMock()
-        mock_supabase.return_value = mock_client
-
-        # Mock the ownership check
-        select_result = MagicMock()
-        select_result.data = [
-            {"id": "gen-1", "image_url": "https://example.com/img1.png"}
-        ]
-        (
-            mock_client.table.return_value
-            .select.return_value
-            .eq.return_value
-            .eq.return_value
-            .execute.return_value
-        ) = select_result
-
-        # Mock the delete
-        mock_client.table.return_value.delete.return_value.eq.return_value.execute.return_value = MagicMock()
+        mock_delete.return_value = True
 
         resp = client.delete("/api/v1/gallery/gen-1")
         assert resp.status_code == 204
 
-        mock_delete_file.assert_called_once_with("https://example.com/img1.png")
+        mock_delete.assert_called_once_with("gen-1", "user-123-abc")
 
-    @patch("app.api.v1.routes.gallery._get_supabase")
-    def test_delete_generation_not_found(self, mock_supabase):
+    @patch("app.api.v1.routes.gallery.delete_user_generation")
+    def test_delete_generation_not_found(self, mock_delete):
         """DELETE /api/v1/gallery/{id} returns 404 when not found or not owned."""
-        mock_client = MagicMock()
-        mock_supabase.return_value = mock_client
-
-        select_result = MagicMock()
-        select_result.data = []
-        (
-            mock_client.table.return_value
-            .select.return_value
-            .eq.return_value
-            .eq.return_value
-            .execute.return_value
-        ) = select_result
+        mock_delete.return_value = False
 
         resp = client.delete("/api/v1/gallery/nonexistent-id")
         assert resp.status_code == 404
