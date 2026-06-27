@@ -20,7 +20,7 @@ async def test_pipeline_e2e_gemini_and_local_diffusers():
          patch.object(settings, "local_diffusers_url", "http://colab-tunnel.ngrok-free.app"):
              
         with patch("google.genai.Client") as MockClient, \
-             patch("httpx.AsyncClient.post", return_value=mock_gen_resp):
+             patch("app.services.providers.local_diffusers.requests.post", return_value=mock_gen_resp):
                  
             MockClient.return_value.models.generate_content.return_value = mock_vlm_resp
             

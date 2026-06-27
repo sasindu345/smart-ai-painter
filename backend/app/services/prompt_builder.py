@@ -24,8 +24,8 @@ def build_prompt(
 
     This function contains NO AI calls. It is a pure mapping.
     """
-    # Determine subject: prefer user hint if confidence is low
-    if user_hint and scene.confidence < 0.5:
+    # Determine subject: always prefer user hint if provided
+    if user_hint and user_hint.strip():
         subject = user_hint.strip()
     else:
         subject = scene.subject.strip()

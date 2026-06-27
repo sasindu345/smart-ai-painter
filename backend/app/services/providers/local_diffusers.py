@@ -2,6 +2,8 @@ import base64
 import logging
 import uuid
 import httpx
+import requests
+import anyio
 from fastapi import HTTPException
 from app.core.config import settings
 from app.services.providers.base import GenerationProvider, BuiltPrompt, GenerationResult
@@ -53,8 +55,10 @@ class LocalDiffusersProvider(GenerationProvider):
         logger.info(f"Sending generation request to local diffusers server: {generate_endpoint}")
 
         try:
-            async with httpx.AsyncClient(timeout=90.0) as client:
-                response = await client.post(generate_endpoint, json=payload)
+            def make_request():
+                return requests.post(generate_endpoint, json=payload, timeout=90.0)
+
+            response = await anyio.to_thread.run_sync(make_request)
 
             if response.status_code != 200:
                 logger.error(f"Local diffusers returned error {response.status_code}: {response.text}")
@@ -74,13 +78,13 @@ class LocalDiffusersProvider(GenerationProvider):
                 provider_name="local-diffusers-controlnet",
             )
 
-        except httpx.ConnectError as e:
+        except requests.exceptions.ConnectionError as e:
             logger.error(f"Failed to connect to local diffusers server at {url}: {e}")
             raise HTTPException(
                 status_code=503,
                 detail="Could not connect to the free GPU server. Make sure your Colab/Kaggle notebook is running and the tunnel URL is correct."
             )
-        except httpx.TimeoutException as e:
+        except requests.exceptions.Timeout as e:
             logger.error(f"Timeout connecting to local diffusers server: {e}")
             raise HTTPException(
                 status_code=504,

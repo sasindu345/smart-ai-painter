@@ -36,7 +36,7 @@ async def test_local_diffusers_provider_success():
     mock_response.json.return_value = {"image": "generated_image_b64"}
     
     with patch.object(settings, "local_diffusers_url", "http://colab-tunnel.ngrok-free.app"):
-        with patch("httpx.AsyncClient.post", return_value=mock_response) as mock_post:
+        with patch("app.services.providers.local_diffusers.requests.post", return_value=mock_response) as mock_post:
             result = await provider.generate("dGVzdF9iNjQ=", prompt, 512, 512)
             
             assert isinstance(result, GenerationResult)
@@ -52,6 +52,7 @@ async def test_local_diffusers_provider_success():
 
 @pytest.mark.anyio
 async def test_local_diffusers_provider_connect_error():
+    import requests
     provider = LocalDiffusersProvider()
     prompt = BuiltPrompt(
         positive="a simple prompt",
@@ -61,7 +62,7 @@ async def test_local_diffusers_provider_connect_error():
     )
     
     with patch.object(settings, "local_diffusers_url", "http://invalid-url.local"):
-        with patch("httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")):
+        with patch("app.services.providers.local_diffusers.requests.post", side_effect=requests.exceptions.ConnectionError("Connection refused")):
             with pytest.raises(HTTPException) as exc:
                 await provider.generate("dGVzdF9iNjQ=", prompt, 512, 512)
             assert exc.value.status_code == 503
@@ -69,6 +70,7 @@ async def test_local_diffusers_provider_connect_error():
 
 @pytest.mark.anyio
 async def test_local_diffusers_provider_timeout():
+    import requests
     provider = LocalDiffusersProvider()
     prompt = BuiltPrompt(
         positive="a simple prompt",
@@ -78,7 +80,7 @@ async def test_local_diffusers_provider_timeout():
     )
     
     with patch.object(settings, "local_diffusers_url", "http://timeout-url.local"):
-        with patch("httpx.AsyncClient.post", side_effect=httpx.TimeoutException("Request timed out")):
+        with patch("app.services.providers.local_diffusers.requests.post", side_effect=requests.exceptions.Timeout("Request timed out")):
             with pytest.raises(HTTPException) as exc:
                 await provider.generate("dGVzdF9iNjQ=", prompt, 512, 512)
             assert exc.value.status_code == 504

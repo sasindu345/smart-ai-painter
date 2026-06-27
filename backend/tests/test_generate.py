@@ -9,9 +9,16 @@ from PIL import Image
 
 # Force mock mode for tests regardless of .env
 os.environ["AI_MODE"] = "mock"
+os.environ["VLM_PROVIDER"] = "mock"
 
+from app.core.config import settings
 from app.main import app
 from app.api.v1.routes import generate as generate_route
+
+@pytest.fixture(autouse=True)
+def force_mock_settings():
+    settings.ai_mode = "mock"
+    settings.vlm_provider = "mock"
 
 client = TestClient(app)
 

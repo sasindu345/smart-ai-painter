@@ -23,9 +23,13 @@ class Settings(BaseSettings):
     replicate_model_id: str = "jagilley/controlnet-scribble"
 
     # Vision (VLM) settings
-    vlm_provider: Literal["mock", "gemini"] = "mock"
+    vlm_provider: Literal["mock", "gemini", "grok", "groq"] = "mock"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
+    grok_api_key: str = ""
+    grok_model: str = "grok-2-vision-1212"
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.2-11b-vision-preview"
 
     # Confidence Threshold
     vlm_confidence_threshold: float = 0.5
