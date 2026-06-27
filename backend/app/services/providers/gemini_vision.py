@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import socket
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
@@ -8,6 +9,15 @@ from app.core.config import settings
 from app.services.providers.base import VisionProvider, SceneAnalysis
 
 logger = logging.getLogger(__name__)
+
+# ── IPv4 fix: macOS can fail with IPv6 on some networks ──────────────────────
+_original_getaddrinfo = socket.getaddrinfo
+
+def _ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+    return _original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+socket.getaddrinfo = _ipv4_only
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 class GeminiSceneSchema(BaseModel):
@@ -34,7 +44,10 @@ class GeminiVisionProvider(VisionProvider):
                 logger.warning("GEMINI_API_KEY is not set. Gemini vision provider will fail.")
                 raise ValueError("GEMINI_API_KEY config is empty.")
 
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(timeout=45000),
+            )
 
             # Generate content using structured JSON schema
             response = client.models.generate_content(
@@ -51,13 +64,18 @@ class GeminiVisionProvider(VisionProvider):
                     response_schema=GeminiSceneSchema,
                     system_instruction=(
                         "You are a sketch recognition system. You analyze simple hand-drawn line drawings on white backgrounds.\n"
-                        "Your ONLY job is to identify WHAT is drawn. Do not guess mood, weather, lighting, or artistic style.\n"
-                        "Rules:\n"
+                        "Your ONLY job is to identify WHAT is drawn as a WHOLE subject.\n\n"
+                        "CRITICAL RULES:\n"
+                        "- 'subject' must be the WHOLE thing drawn (e.g. 'side view of a car', 'a house', 'a dog').\n"
+                        "- Do NOT make a part of the object the subject (e.g. if a car is drawn, subject is 'car', not 'wheel').\n"
+                        "- 'objects' lists the visible COMPONENT PARTS only (e.g. for a car: wheels, doors, windows, bumper).\n"
+                        "- 'view' describes the angle: front, side, top-down, three-quarter, bird-eye, or unknown.\n"
+                        "- 'composition' describes spatial layout in one sentence (e.g. 'single object centered, facing left').\n"
                         "- If the sketch is too abstract to identify, set confidence below 0.3.\n"
                         "- If you can partially identify the sketch, set confidence between 0.3 and 0.7.\n"
-                        "- Only set confidence above 0.7 if you are reasonably certain.\n"
+                        "- Only set confidence above 0.7 if you are reasonably certain of the WHOLE subject.\n"
                         "- Never invent objects that are not visually present in the sketch.\n"
-                        "- The 'objects' list must only contain things you can see drawn."
+                        "- The 'objects' list must ONLY contain things you can see drawn."
                     )
                 ),
             )

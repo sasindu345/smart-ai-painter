@@ -1,16 +1,29 @@
 from app.services.providers.base import SceneAnalysis, BuiltPrompt
 
 STYLE_PROMPTS = {
-    "realistic": "photorealistic, highly detailed, professional quality, 8k",
-    "watercolor": "watercolor painting, soft colors, flowing brushwork, artistic",
+    "realistic": "photorealistic, highly detailed, professional photography, sharp focus, 8k",
+    "watercolor": "watercolor painting, soft colors, flowing brushwork, artistic, painterly",
     "oil": "oil painting on canvas, rich textures, visible brushstrokes, masterpiece",
     "anime": "anime style, cel shading, vibrant colors, clean lines, studio quality",
     "sketch": "detailed pencil sketch, cross-hatching, graphite drawing, paper texture",
+    "cartoon": "cartoon illustration, bold outlines, flat colors, clean linework",
+}
+
+# Maps VLM view names → diffusion-model-friendly camera descriptions
+VIEW_MAP = {
+    "front": "front view, facing camera",
+    "side": "side view, lateral perspective",
+    "top-down": "top-down view, aerial perspective",
+    "bird-eye": "bird's-eye view, aerial perspective",
+    "three-quarter": "three-quarter view, dynamic angle",
+    "unknown": "",
 }
 
 DEFAULT_NEGATIVE = (
     "blurry, low quality, distorted, deformed, ugly, "
-    "extra limbs, bad anatomy, watermark, text, signature"
+    "extra limbs, bad anatomy, watermark, text, signature, "
+    "cropped, partial, close-up, zoomed in, cut off, out of frame, "
+    "duplicate, tiling, mutation"
 )
 
 
@@ -23,34 +36,55 @@ def build_prompt(
     """Build a deterministic SDXL prompt from structured scene data.
 
     This function contains NO AI calls. It is a pure mapping.
+
+    Strategy:
+    - Subject is ALWAYS the anchor (first token, highest weight).
+    - Objects describe parts/details, NOT alternative subjects.
+    - View and composition set the scene framing.
+    - Style suffix comes last.
     """
-    # Determine subject: always prefer user hint if provided
+    parts: list[str] = []
+
+    # 1. Subject anchor — user hint takes absolute priority
     if user_hint and user_hint.strip():
         subject = user_hint.strip()
     else:
         subject = scene.subject.strip()
 
-    # Build prompt parts
-    parts = [subject]
+    # Wrap subject in emphasis so diffusion model treats it as the primary concept
+    parts.append(subject)
 
-    # Only include objects from VLM if confidence is reasonable
+    # 2. Supporting object details — filter out objects that ARE the subject
+    #    (e.g. if subject is "car", don't add "car" again as a detail)
     if scene.objects and scene.confidence >= 0.5:
-        detail = ", ".join(obj.strip() for obj in scene.objects[:5] if obj.strip())
-        if detail:
-            parts.append(f"featuring {detail}")
+        subject_lower = subject.lower()
+        supporting = [
+            obj.strip()
+            for obj in scene.objects[:4]
+            if obj.strip() and obj.strip().lower() not in subject_lower
+        ]
+        if supporting:
+            parts.append(f"with {', '.join(supporting)}")
 
-    if scene.view and scene.view != "unknown":
-        parts.append(scene.view.strip())
+    # 3. View framing — map VLM view name to diffusion-friendly camera description
+    view_key = scene.view.lower().strip() if scene.view else "unknown"
+    view_text = VIEW_MAP.get(view_key, "")
+    if view_text:
+        parts.append(view_text)
 
-    if scene.composition:
-        parts.append(scene.composition.strip())
+    # 4. Composition context (abbreviated — keep it concise)
+    if scene.composition and scene.composition.strip() not in ("unknown", ""):
+        # Use only first clause to avoid overly verbose prompts
+        comp = scene.composition.split(".")[0].strip()
+        if len(comp) < 80:
+            parts.append(comp)
 
-    # Style description addition
-    style_suffix = STYLE_PROMPTS.get(style, STYLE_PROMPTS["realistic"])
+    # 5. Quality + style suffix
+    style_suffix = STYLE_PROMPTS.get(style.lower(), STYLE_PROMPTS["realistic"])
     parts.append(style_suffix)
 
-    positive = ", ".join(parts)
-    
+    positive = ", ".join(p for p in parts if p)
+
     # Calculate guidance and controlnet conditioning scales based on strength
     # guidance scale: 7.0 at strength=0, 13.0 at strength=1
     guidance = 7.0 + (strength * 6.0)

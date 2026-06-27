@@ -56,7 +56,7 @@ class GroqVisionProvider(VisionProvider):
             )
 
             payload = {
-                "model": settings.groq_model or "llama-3.2-11b-vision-preview",
+                "model": settings.groq_model or "meta-llama/llama-4-scout-17b-16e-instruct",
                 "messages": [
                     {
                         "role": "system",
@@ -85,7 +85,7 @@ class GroqVisionProvider(VisionProvider):
             url = "https://api.groq.com/openai/v1/chat/completions"
 
             def perform_post():
-                return requests.post(url, headers=headers, json=payload, timeout=30.0)
+                return requests.post(url, headers=headers, json=payload, timeout=45.0)
 
             response = await anyio.to_thread.run_sync(perform_post)
 
