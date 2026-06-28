@@ -23,6 +23,15 @@ const initialState: CanvasState = {
   pageWidth: PAGE_PRESET_SIZES.landscape.width,
   pageHeight: PAGE_PRESET_SIZES.landscape.height,
   isResultDrawerOpen: false,
+  aiStyle: "realistic",
+  aiStrength: 65,
+  aiPrompt: "",
+  aiResult: null,
+  aiVariations: [],
+  aiActiveVariation: -1,
+  showAiPromptInput: false,
+  aiLoading: false,
+  aiError: null,
 };
 
 export const useCanvasStore = create<CanvasState & CanvasAction>((set) => ({
@@ -88,5 +97,22 @@ export const useCanvasStore = create<CanvasState & CanvasAction>((set) => ({
       }
 
       return status;
+    }),
+  setAiStyle: (aiStyle) => set({ aiStyle }),
+  setAiStrength: (aiStrength) => set({ aiStrength }),
+  setAiPrompt: (aiPrompt) => set({ aiPrompt }),
+  setAiResult: (aiResult) => set({ aiResult }),
+  setAiVariations: (aiVariations) => set({ aiVariations }),
+  setAiActiveVariation: (aiActiveVariation) => set({ aiActiveVariation }),
+  setShowAiPromptInput: (showAiPromptInput) => set({ showAiPromptInput }),
+  setAiLoading: (aiLoading) => set({ aiLoading }),
+  setAiError: (aiError) => set({ aiError }),
+  resetAiGeneration: () =>
+    set({
+      aiResult: null,
+      aiVariations: [],
+      aiActiveVariation: -1,
+      aiLoading: false,
+      aiError: null,
     }),
 }));

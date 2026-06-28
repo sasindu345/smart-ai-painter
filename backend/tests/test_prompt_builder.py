@@ -5,7 +5,7 @@ from app.services.prompt_builder import build_prompt, STYLE_PROMPTS
 
 def test_build_prompt_high_confidence_no_hint():
     scene = SceneAnalysis(
-        subject="cat on a rug",
+        subject="sleeping animal",
         objects=["cat", "rug"],
         composition="centered",
         view="three-quarter",
@@ -14,9 +14,9 @@ def test_build_prompt_high_confidence_no_hint():
     )
     result = build_prompt(scene=scene, style="realistic", strength=0.6)
     
-    assert "cat on a rug" in result.positive
-    assert "featuring cat, rug" in result.positive
-    assert "three-quarter" in result.positive
+    assert "sleeping animal" in result.positive
+    assert "with cat, rug" in result.positive
+    assert "three-quarter view, dynamic angle" in result.positive
     assert "centered" in result.positive
     assert STYLE_PROMPTS["realistic"] in result.positive
 

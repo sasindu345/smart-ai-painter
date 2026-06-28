@@ -58,12 +58,20 @@ async def generate_image(
             # Don't fail the generation if gallery save fails
             logger.warning("Failed to save generation to gallery", exc_info=True)
 
+    # Format a human-readable scene description
+    subject = result.scene.subject.strip()
+    view = result.scene.view.strip()
+    if view and view.lower() not in ("unknown", "") and view.lower() not in subject.lower():
+        scene_desc = f"{subject} ({view} view)"
+    else:
+        scene_desc = subject
+
     return GenerateResponse(
         image_base64=result.image_base64,
         generation_id=generation_id,
         mode=settings.ai_mode,
         provider=result.provider_name,
-        scene_description=result.scene.raw_description,
+        scene_description=scene_desc,
         confidence=result.scene.confidence,
         needs_hint=result.needs_hint,
     )

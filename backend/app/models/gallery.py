@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -6,7 +7,7 @@ class GalleryItem(BaseModel):
     prompt: str
     style: str
     image_url: str
-    created_at: str
+    created_at: datetime
 
 
 class GalleryResponse(BaseModel):

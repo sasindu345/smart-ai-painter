@@ -1,3 +1,5 @@
+import type { ArtStyle, GenerateResponse } from "./generate";
+
 export const PAGE_PRESET_SIZES = {
   square: { width: 1024, height: 1024, label: "Square" },
   portrait: { width: 1080, height: 1350, label: "Portrait" },
@@ -31,6 +33,17 @@ export type CanvasState = {
   pageWidth: number;
   pageHeight: number;
   isResultDrawerOpen: boolean;
+
+  // AI generation states
+  aiStyle: ArtStyle;
+  aiStrength: number;
+  aiPrompt: string;
+  aiResult: GenerateResponse | null;
+  aiVariations: string[];
+  aiActiveVariation: number;
+  showAiPromptInput: boolean;
+  aiLoading: boolean;
+  aiError: string | null;
 };
 
 export type CanvasAction = {
@@ -48,4 +61,16 @@ export type CanvasAction = {
   setCanvasStatus: (
     status: Pick<CanvasState, "canUndo" | "canRedo" | "isDirty" | "isEmpty">,
   ) => void;
+
+  // AI generation actions
+  setAiStyle: (style: ArtStyle) => void;
+  setAiStrength: (strength: number) => void;
+  setAiPrompt: (prompt: string) => void;
+  setAiResult: (result: GenerateResponse | null) => void;
+  setAiVariations: (variations: string[]) => void;
+  setAiActiveVariation: (index: number) => void;
+  setShowAiPromptInput: (show: boolean) => void;
+  setAiLoading: (loading: boolean) => void;
+  setAiError: (error: string | null) => void;
+  resetAiGeneration: () => void;
 };
