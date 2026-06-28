@@ -1,118 +1,137 @@
-# Smart AI Painter
+# Smart AI Painter Studio
 
-> **Sketch first. Let AI finish it.**
-> A workspace-first sketch editor that turns rough drawings into polished AI artwork without ever leaving the canvas.
+> **Sketch first. Let AI bring it to life.**
+> A premium, workspace-first sketch editor that translates rough drawings into polished AI artwork in real time without ever leaving the canvas.
+
+![Smart AI Painter Studio Screenshot](assets/screenshot.png)
 
 ---
 
-## Features
+## Core Features
 
-- **Full drawing workspace** — tool dock, page presets (Square, Portrait, Landscape), zoom, undo/redo
-- **Brush, eraser, shapes, and selection tools** with keyboard shortcuts
-- **Quick color palette** with custom color picker and brush size control
-- **AI generation panel** — describe your vision, pick a style, and generate artwork from your sketch
-- **Prompt history** — last 10 prompts saved for one-click reuse
-- **Style presets and sketch-strength control**
-- **Custom Local JWT Authentication** — local email/password login and register with lightweight JWT verification
-- **Gallery Storage** — saves sketches and generations to Cloudinary and database metadata to Neon DB
-- **Device-specific layouts** — dedicated phone, tablet, and desktop shells with touch-first controls
-- **Dark / Light mode** with system-preference detection
-- **Accessible** — keyboard navigation, reduced motion support, skip-to-content link
+- 🎨 **Full Fabric.js Workspace** — Interactive canvas, active tool badges, page size presets (Square, Portrait, Landscape), zoom controls, and undo/redo history.
+- 🖌️ **Advanced Toolset** — Draw, erase, select, rotate, resize, delete, and pan elements. Custom brush thickness controller and dynamic quick-color swatches with a hex picker.
+- ⚡ **AI Generation Studio** — Describe your drawing hint, select style presets, adjust generation strength, and generate high-fidelity artwork.
+- 🤖 **VLM Image Interpretation** — Integrates Vision Language Models (Gemini / Groq Vision) to output detected main objects, confidence levels, and short interpretations.
+- 📱 **Responsive Workspace Shells** — Three dedicated viewports with touch-first controls for Mobile Phone, Tablet, and Desktop monitor screens.
+- 🔄 **Perfect Slider sweeps & Split Views** — Side-by-side comparison split view and alignment-balanced before/after slider comparison mode.
+- 🗄️ **Public Gallery Hub** — Local gallery search, date sorting, and canvas size filters to browse all drawing sketches and generated variations.
+- 🌓 **Ambient Dark / Light modes** — Custom premium themes responding automatically to system settings.
+
+---
 
 ## Architecture
 
-```
-Next.js 14 (Frontend)  ──REST──▶  FastAPI (Backend)  ──▶  Neon DB (PostgreSQL)
-     │                                  │
-  Fabric.js canvas                      ├──▶  Cloudinary (Image Storage)
-  Zustand state                         │
-  TanStack Query                        └──▶  AI Generation (Local GPU / Colab / Replicate)
+The project is structured as a decoupled Next.js 14 frontend and a FastAPI backend. It utilizes Neon PostgreSQL/SQLite metadata tables, Cloudinary image storage, and local or hosted Stable Diffusion image generators.
+
+```mermaid
+graph TD
+    A[Next.js 14 Web App] -->|REST API Requests| B[FastAPI Backend]
+    A -->|Drawing Canvas UI| C[Fabric.js Canvas Engine]
+    B -->|Blob Uploads| D[Cloudinary Storage]
+    B -->|Metadata Rows| E[Neon Postgres / SQLite]
+    B -->|img2img Generation| F[Stable Diffusion XL / Replicate]
+    B -->|Sketch Decoding| G[Gemini / Groq Vision VLM]
 ```
 
-### How it works
-
+### Core Flow
 1. User draws on the Fabric.js canvas
-2. "AI Generate" exports the canvas to base64 PNG
-3. `POST /api/v1/generate` sends sketch + prompt + style to FastAPI backend
-4. Backend analyzes the sketch layout using Gemini Vision or Groq Vision (VLM)
-5. Backend processes the sketch and forwards it to the active AI Generation Provider (local diffusers server or Replicate)
-6. Generated image is uploaded to Cloudinary, metadata is saved to Neon DB, and base64 is returned to the user
+2. Canvas is exported as base64 PNG
+3. `POST /api/v1/generate` sends the sketch, description hint, and style preset to the backend
+4. Backend runs a Vision Language Model (VLM) to analyze and tag the sketch features (confidence, objects, description)
+5. Backend forwards the sketch to the active image generator provider (Stable Diffusion XL / Replicate)
+6. Generated image is uploaded to Cloudinary, metadata is saved to the database, and the base64 output is returned to the user
+
+---
 
 ## Tech Stack
 
-| Layer    | Tools |
-|----------|-------|
-| Frontend | Next.js 14, TypeScript, Tailwind CSS, Fabric.js, TanStack Query, Zustand |
-| Backend  | Python 3.13, FastAPI, Uvicorn, PBKDF2 hashing, local JWT (HS256), Pillow, requests, Pydantic |
-| Platform | Neon DB (PostgreSQL), Cloudinary (Image Storage), Google Colab / Ngrok (Local GPU Server) |
-| CI/CD    | GitHub Actions, Docker, EC2 deployment |
+| Layer | Technologies |
+|---|---|
+| **Frontend** | Next.js 14 (App Router), TypeScript, Fabric.js, Tailwind CSS (Vanilla CSS variables), TanStack Query v5, Zustand state store |
+| **Backend** | Python 3.13, FastAPI, Uvicorn, Pillow (PIL), Pydantic v2, asyncpg, SQLite / PostgreSQL |
+| **Integrations** | Cloudinary API (Assets Storage), Replicate / Diffusers API (SDXL), Gemini / Groq API (VLM Analysis) |
+| **CI/CD** | GitHub Actions (CI Typecheck & Lints) |
+
+---
 
 ## Repository Layout
 
 ```
 smart-ai-painter/
-├── frontend/    — Next.js app
-├── backend/     — FastAPI service
-└── infra/       — Docker, Nginx, deploy configs
+├── .github/workflows/  # CI pipelines
+├── assets/             # Project screenshots & media assets
+├── backend/            # Python FastAPI service & database models
+└── frontend/           # Next.js 14 TypeScript app & components
 ```
+
+---
 
 ## Getting Started
 
-### Prerequisites
-
+### 1. Prerequisites
+Ensure you have the following installed on your machine:
 - Node.js 20+
-- Python 3.13+
-- Neon DB (Postgres) Database URL
-- Cloudinary cloud storage keys
-- Google Gemini API Key or Groq API Key (for Vision)
-- Local GPU server running Stable Diffusion (Colab / Local)
+- Python 3.12+ / 3.13+
 
-### Frontend
+### 2. Backend Setup
+1. Open the backend folder:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Copy the environment variables template and fill in your keys (Gemini/Groq, Cloudinary, etc.):
+   ```bash
+   cp .env.example .env
+   ```
+5. Run the development server:
+   ```bash
+   python -m uvicorn app.main:app --reload
+   ```
+   Runs on [http://localhost:8000](http://localhost:8000).
 
-```bash
-cd frontend
-cp .env.local.example .env.local   # fill in local API url
-npm install
-npm run dev
-```
+### 3. Frontend Setup
+1. Open the frontend folder:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+   Runs on [http://localhost:3000](http://localhost:3000).
 
-Runs on `http://localhost:3000`.
-
-### Backend
-
-```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env               # fill in database, storage, VLM, and diffusers keys
-uvicorn app.main:app --reload
-```
-
-Runs on `http://localhost:8000`.
+---
 
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
-|----------|--------|
+|---|---|
 | `Ctrl/⌘ + Z` | Undo |
 | `Ctrl/⌘ + Shift + Z` | Redo |
-| `Ctrl/⌘ + Y` | Redo (alt) |
-| `Delete / Backspace` | Delete selected |
-| `V` | Select |
-| `H` | Pan |
-| `B` | Brush |
-| `E` | Eraser |
-| `R` | Rectangle |
-| `O` | Ellipse |
-| `L` | Line |
+| `Ctrl/⌘ + Y` | Redo (Alternate) |
+| `Delete / Backspace` | Delete selected elements |
+| `V` | Select / Move Tool |
+| `H` | Hand / Pan Tool |
+| `B` | Brush Tool |
+| `E` | Eraser Tool |
+| `R` | Rectangle Shape Tool |
+| `O` | Ellipse Shape Tool |
+| `L` | Line Shape Tool |
 
-Also available in-app via the **Shortcuts** button.
-
-## Deployment
-
-Deployed on EC2 via Docker Compose behind Nginx. See [`infra/`](infra/) and [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+---
 
 ## License
-
 MIT
-

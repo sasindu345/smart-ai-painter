@@ -214,7 +214,7 @@ export function SketchCanvas({ surfaceRef, canvasRef }: SketchCanvasProps) {
                 {comparisonMode === "split" && (
                   <div className="w-full h-full flex flex-col sm:flex-row bg-[var(--canvas)] gap-1">
                     <div className="flex-1 min-w-0 relative border-r border-[var(--border)]">
-                      <div className="absolute inset-0 flex items-center justify-center p-2 bg-[var(--background)]">
+                      <div className="absolute inset-0 flex items-center justify-center p-2 bg-[var(--canvas)]">
                         <img
                           src={
                             aiSketchBase64.startsWith("data:")
@@ -230,7 +230,7 @@ export function SketchCanvas({ surfaceRef, canvasRef }: SketchCanvasProps) {
                       </span>
                     </div>
                     <div className="flex-1 min-w-0 relative">
-                      <div className="absolute inset-0 flex items-center justify-center p-2 bg-[var(--background)]">
+                      <div className="absolute inset-0 flex items-center justify-center p-2 bg-[var(--canvas)]">
                         <img
                           src={`data:image/png;base64,${aiVariations[aiActiveVariation]}`}
                           alt="Generated AI artwork"
@@ -247,22 +247,22 @@ export function SketchCanvas({ surfaceRef, canvasRef }: SketchCanvasProps) {
                 {/* 3. Comparison: Slider Sweep Separation View */}
                 {comparisonMode === "slider" && (
                   <div
-                    className="relative w-full h-full bg-[var(--background)] overflow-hidden"
+                    className="relative w-full h-full bg-[var(--canvas)] overflow-hidden"
                     onMouseEnter={() => setIsHoveringSlider(true)}
                     onMouseLeave={() => setIsHoveringSlider(false)}
                   >
                     {/* Background Layer: Generated Output */}
-                    <div className="absolute inset-0 flex items-center justify-center p-1 select-none pointer-events-none">
+                    <div className="absolute inset-0 select-none pointer-events-none">
                       <img
                         src={`data:image/png;base64,${aiVariations[aiActiveVariation]}`}
                         alt="AI Generation output"
-                        className="max-w-full max-h-full object-contain"
+                        className="w-full h-full object-cover"
                       />
                     </div>
 
                     {/* Top Layer: Original Sketch (Clipped) */}
                     <div
-                      className="absolute inset-0 flex items-center justify-center p-1 select-none pointer-events-none transition-all duration-75"
+                      className="absolute inset-0 select-none pointer-events-none transition-all duration-75"
                       style={{
                         clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)`,
                       }}
@@ -274,7 +274,7 @@ export function SketchCanvas({ surfaceRef, canvasRef }: SketchCanvasProps) {
                             : `data:image/png;base64,${aiSketchBase64}`
                         }
                         alt="Sketch drawing"
-                        className="max-w-full max-h-full object-contain bg-[var(--canvas)]"
+                        className="w-full h-full object-cover"
                       />
                     </div>
 
