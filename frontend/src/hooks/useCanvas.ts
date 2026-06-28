@@ -80,6 +80,7 @@ export type UseCanvasReturn = {
   zoomOut: () => void;
   resetZoom: () => void;
   loadSketchImage: (imageUrl: string) => Promise<void>;
+  loadTemplate: (type: "face" | "house" | "tree") => void;
 };
 
 type ShapeObject = Rect | Ellipse | Line;
@@ -704,6 +705,101 @@ export const useCanvas = (): UseCanvasReturn => {
     [clearHistory, serializeCanvas, syncCanvasStatus],
   );
 
+  const loadTemplate = useCallback((type: "face" | "house" | "tree") => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    canvas.clear();
+
+    if (type === "face") {
+      const face = new Ellipse({
+        left: 150,
+        top: 80,
+        rx: 80,
+        ry: 80,
+        fill: "transparent",
+        stroke: "#111827",
+        strokeWidth: 6,
+      });
+
+      const eyeL = new Ellipse({
+        left: 190,
+        top: 120,
+        rx: 8,
+        ry: 8,
+        fill: "#111827",
+      });
+
+      const eyeR = new Ellipse({
+        left: 260,
+        top: 120,
+        rx: 8,
+        ry: 8,
+        fill: "#111827",
+      });
+
+      const mouth = new Path("M 200 180 Q 230 210 260 180", {
+        fill: "transparent",
+        stroke: "#111827",
+        strokeWidth: 6,
+      });
+
+      canvas.add(face, eyeL, eyeR, mouth);
+    } else if (type === "house") {
+      const base = new Rect({
+        left: 140,
+        top: 160,
+        width: 180,
+        height: 120,
+        fill: "transparent",
+        stroke: "#111827",
+        strokeWidth: 6,
+      });
+
+      const roof = new Path("M 120 160 L 230 70 L 340 160 Z", {
+        fill: "transparent",
+        stroke: "#111827",
+        strokeWidth: 6,
+      });
+
+      const door = new Rect({
+        left: 200,
+        top: 220,
+        width: 50,
+        height: 60,
+        fill: "transparent",
+        stroke: "#111827",
+        strokeWidth: 6,
+      });
+
+      canvas.add(base, roof, door);
+    } else if (type === "tree") {
+      const trunk = new Rect({
+        left: 210,
+        top: 200,
+        width: 40,
+        height: 100,
+        fill: "transparent",
+        stroke: "#111827",
+        strokeWidth: 6,
+      });
+
+      const leaves = new Path(
+        "M 230 60 C 170 100 170 200 230 200 C 290 200 290 100 230 60 Z",
+        {
+          fill: "transparent",
+          stroke: "#111827",
+          strokeWidth: 6,
+        },
+      );
+
+      canvas.add(trunk, leaves);
+    }
+
+    canvas.requestRenderAll();
+    saveSnapshotRef.current();
+  }, []);
+
   return useMemo(
     () => ({
       surfaceRef,
@@ -716,11 +812,13 @@ export const useCanvas = (): UseCanvasReturn => {
       zoomOut,
       resetZoom,
       loadSketchImage,
+      loadTemplate,
     }),
     [
       clear,
       deleteSelected,
       loadSketchImage,
+      loadTemplate,
       redo,
       resetZoom,
       undo,

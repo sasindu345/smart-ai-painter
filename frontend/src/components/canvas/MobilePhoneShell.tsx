@@ -31,6 +31,7 @@ import { PAGE_PRESET_SIZES, type CanvasTool } from "@/types/canvas";
 
 import { ResultPanel } from "../result/ResultPanel";
 import { BottomSheet } from "../shared/BottomSheet";
+import { SketchCanvas } from "./SketchCanvas";
 
 type Sheet = "tools" | "brush" | "generate" | "more" | null;
 
@@ -71,11 +72,15 @@ const pagePresets = Object.entries(PAGE_PRESET_SIZES) as Array<
 interface MobilePhoneShellProps {
   canvas: UseCanvasReturn;
   loadingSketch: boolean;
+  handleGenerate: () => void;
+  aiLoading: boolean;
 }
 
 export function MobilePhoneShell({
   canvas,
   loadingSketch,
+  handleGenerate,
+  aiLoading,
 }: MobilePhoneShellProps) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [saveMessage, setSaveMessage] = useState("");
@@ -141,25 +146,14 @@ export function MobilePhoneShell({
   return (
     <div className="flex flex-1 flex-col">
       {/* Canvas — takes all remaining space */}
-      <main className="relative flex-1 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center overflow-auto bg-[var(--background)] p-1.5">
-          <div
-            ref={canvas.surfaceRef}
-            className="canvas-surface relative w-full max-w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--canvas)] shadow-[0_8px_30px_rgba(15,23,42,0.12)]"
-            style={{ aspectRatio: `${pageWidth} / ${pageHeight}` }}
-          >
-            <canvas
-              ref={canvas.canvasRef}
-              className="block"
-              role="img"
-              aria-label={`Drawing canvas, ${pagePreset} ${pageWidth} by ${pageHeight}`}
-              tabIndex={0}
-            />
-          </div>
-        </div>
-
+      <main className="relative flex-1 overflow-hidden p-1.5 flex flex-col">
+        <SketchCanvas
+          surfaceRef={canvas.surfaceRef}
+          canvasRef={canvas.canvasRef}
+          loadTemplate={canvas.loadTemplate}
+        />
         {loadingSketch && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--panel)]/80 backdrop-blur-sm">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[var(--panel)]/80 backdrop-blur-sm">
             <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
           </div>
         )}
@@ -371,7 +365,11 @@ export function MobilePhoneShell({
         description="Describe your art"
         size="full"
       >
-        <ResultPanel />
+        <ResultPanel
+          handleGenerate={handleGenerate}
+          aiLoading={aiLoading}
+          onClose={closeSheet}
+        />
       </BottomSheet>
 
       {/* More sheet */}

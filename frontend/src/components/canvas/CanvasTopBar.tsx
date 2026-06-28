@@ -33,7 +33,9 @@ type CanvasTopBarProps = Pick<
   | "zoomIn"
   | "zoomOut"
   | "resetZoom"
->;
+> & {
+  loadTemplate?: (type: "face" | "house" | "tree") => void;
+};
 
 const pagePresets = Object.entries(PAGE_PRESET_SIZES) as Array<
   [
@@ -62,6 +64,7 @@ export function CanvasTopBar({
   zoomIn,
   zoomOut,
   resetZoom,
+  loadTemplate,
 }: CanvasTopBarProps) {
   const activeTool = useCanvasStore((state) => state.activeTool);
   const brushColor = useCanvasStore((state) => state.brushColor);
@@ -164,25 +167,56 @@ export function CanvasTopBar({
           />
         </div>
 
-        {/* Center: page presets */}
-        <div className="flex items-center gap-1 rounded-xl bg-[var(--panel-elevated)] p-1">
-          {pagePresets.map(([preset, presetConfig]) => {
-            const isActive = pagePreset === preset;
-            return (
+        {/* Center: page presets & template quick-select */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 rounded-xl bg-[var(--panel-elevated)] p-1">
+            {pagePresets.map(([preset, presetConfig]) => {
+              const isActive = pagePreset === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setPagePreset(preset)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
+                    isActive
+                      ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {presetConfig.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {loadTemplate && (
+            <div className="flex items-center gap-1.5 rounded-xl bg-[var(--panel-elevated)] p-1 border border-[var(--border)]/45">
+              <span className="text-[9px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider px-2">
+                Templates:
+              </span>
               <button
-                key={preset}
                 type="button"
-                onClick={() => setPagePreset(preset)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
-                  isActive
-                    ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                }`}
+                onClick={() => loadTemplate("face")}
+                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--panel)] transition-all"
               >
-                {presetConfig.label}
+                😀 Face
               </button>
-            );
-          })}
+              <button
+                type="button"
+                onClick={() => loadTemplate("house")}
+                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--panel)] transition-all"
+              >
+                🏠 House
+              </button>
+              <button
+                type="button"
+                onClick={() => loadTemplate("tree")}
+                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--panel)] transition-all"
+              >
+                🌲 Tree
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right: save, shortcuts, AI */}

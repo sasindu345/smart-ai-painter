@@ -69,6 +69,7 @@ export function CanvasWorkspaceShell() {
 
     setAiLoading(true);
     setAiError(null);
+    useCanvasStore.setState({ aiSketchBase64: base64 });
 
     generate(
       {
@@ -89,6 +90,32 @@ export function CanvasWorkspaceShell() {
           );
           setAiVariations(next);
           setAiActiveVariation(next.length - 1);
+
+          // Add to local history sidebar list
+          const historyItem = {
+            id: result.generation_id || Math.random().toString(36).substr(2, 9),
+            timestamp: new Date().toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            imageUrl: result.image_base64,
+            sketchUrl: base64,
+            style: aiStyle,
+            objects: result.detected_objects || [],
+            confidence: Math.round((result.confidence ?? 1.0) * 100),
+            generationTime: result.generation_time ?? 0,
+            provider: result.provider || "xAI / local",
+            model:
+              result.mode === "mock" ? "Mock Model" : "Stable Diffusion XL",
+            prompt:
+              aiPrompt.trim() ||
+              result.scene_description ||
+              "VLM Generated Prompt",
+            strength: aiStrength,
+          };
+          useCanvasStore.getState().addToHistory(historyItem);
 
           if (result.needs_hint) {
             setShowAiPromptInput(true);
@@ -199,7 +226,12 @@ function CanvasShellInner({
   if (device === "phone") {
     return (
       <div className="flex h-[100dvh] flex-col">
-        <MobilePhoneShell canvas={canvas} loadingSketch={loadingSketch} />
+        <MobilePhoneShell
+          canvas={canvas}
+          loadingSketch={loadingSketch}
+          handleGenerate={handleGenerate}
+          aiLoading={aiLoading}
+        />
         <OnboardingHint />
       </div>
     );
@@ -210,7 +242,12 @@ function CanvasShellInner({
     return (
       <div className="flex min-h-[100dvh] flex-col">
         <TopBar />
-        <TabletShell canvas={canvas} loadingSketch={loadingSketch} />
+        <TabletShell
+          canvas={canvas}
+          loadingSketch={loadingSketch}
+          handleGenerate={handleGenerate}
+          aiLoading={aiLoading}
+        />
         <OnboardingHint />
       </div>
     );
@@ -284,6 +321,7 @@ function CanvasShellInner({
         zoomIn={canvas.zoomIn}
         zoomOut={canvas.zoomOut}
         resetZoom={canvas.resetZoom}
+        loadTemplate={canvas.loadTemplate}
       />
 
       {aiControlsPanel}
@@ -292,6 +330,7 @@ function CanvasShellInner({
         <SketchCanvas
           surfaceRef={canvas.surfaceRef}
           canvasRef={canvas.canvasRef}
+          loadTemplate={canvas.loadTemplate}
         />
         {loadingSketch && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[30px] bg-[var(--panel)]/80 backdrop-blur-sm">

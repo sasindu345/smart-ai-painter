@@ -96,20 +96,6 @@ export function TopBar() {
                 {mounted ? (isDark ? "Light" : "Dark") : "Dark"}
               </span>
             </button>
-
-            {!loading &&
-              (user ? (
-                <UserAvatar />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAuthOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] p-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:opacity-90 sm:px-4 sm:py-2"
-                >
-                  <LogIn size={16} />
-                  <span className="hidden sm:inline">Sign In</span>
-                </button>
-              ))}
           </div>
         </div>
       </header>

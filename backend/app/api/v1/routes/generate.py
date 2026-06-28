@@ -1,4 +1,5 @@
 import logging
+import time
 
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -22,6 +23,8 @@ async def generate_image(
     req: GenerateRequest,
     credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer),
 ) -> GenerateResponse:
+    start_time = time.time()
+
     # 1. Normalize the sketch image for model input
     normalized_b64 = process_sketch(
         sketch_base64=req.sketch_base64,
@@ -66,6 +69,8 @@ async def generate_image(
     else:
         scene_desc = subject
 
+    elapsed_time = round(time.time() - start_time, 2)
+
     return GenerateResponse(
         image_base64=result.image_base64,
         generation_id=generation_id,
@@ -74,4 +79,6 @@ async def generate_image(
         scene_description=scene_desc,
         confidence=result.scene.confidence,
         needs_hint=result.needs_hint,
+        detected_objects=result.scene.objects,
+        generation_time=elapsed_time,
     )

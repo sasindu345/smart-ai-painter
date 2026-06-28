@@ -32,6 +32,20 @@ const initialState: CanvasState = {
   showAiPromptInput: false,
   aiLoading: false,
   aiError: null,
+  aiSketchBase64: "",
+  comparisonMode: "overlay",
+  generationHistory:
+    typeof window !== "undefined"
+      ? (() => {
+          try {
+            return JSON.parse(
+              localStorage.getItem("generation_history") || "[]",
+            );
+          } catch (e) {
+            return [];
+          }
+        })()
+      : [],
 };
 
 export const useCanvasStore = create<CanvasState & CanvasAction>((set) => ({
@@ -115,4 +129,22 @@ export const useCanvasStore = create<CanvasState & CanvasAction>((set) => ({
       aiLoading: false,
       aiError: null,
     }),
+  setComparisonMode: (comparisonMode) => set({ comparisonMode }),
+  addToHistory: (item) =>
+    set((state) => {
+      const nextHistory = [item, ...state.generationHistory].slice(0, 20);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("generation_history", JSON.stringify(nextHistory));
+      }
+      return { generationHistory: nextHistory };
+    }),
+  setHistory: (generationHistory) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "generation_history",
+        JSON.stringify(generationHistory),
+      );
+    }
+    set({ generationHistory });
+  },
 }));

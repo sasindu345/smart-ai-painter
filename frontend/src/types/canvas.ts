@@ -44,6 +44,26 @@ export type CanvasState = {
   showAiPromptInput: boolean;
   aiLoading: boolean;
   aiError: string | null;
+  aiSketchBase64: string;
+
+  // Simplified UX Improvements States
+  comparisonMode: "overlay" | "split" | "slider";
+  generationHistory: HistoryItem[];
+};
+
+export type HistoryItem = {
+  id: string;
+  timestamp: string;
+  imageUrl: string;
+  sketchUrl: string;
+  style: string;
+  objects: string[];
+  confidence: number;
+  generationTime: number;
+  provider: string;
+  model: string;
+  prompt: string;
+  strength: number;
 };
 
 export type CanvasAction = {
@@ -73,4 +93,9 @@ export type CanvasAction = {
   setAiLoading: (loading: boolean) => void;
   setAiError: (error: string | null) => void;
   resetAiGeneration: () => void;
+
+  // Simplified UX Actions
+  setComparisonMode: (mode: "overlay" | "split" | "slider") => void;
+  addToHistory: (item: HistoryItem) => void;
+  setHistory: (history: HistoryItem[]) => void;
 };

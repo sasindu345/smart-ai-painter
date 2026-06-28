@@ -19,3 +19,5 @@ class GenerateResponse(BaseModel):
     scene_description: str = ""                   # VLM interpretation (display to user)
     confidence: float = 1.0                       # VLM confidence score
     needs_hint: bool = False                      # True if confidence < threshold
+    detected_objects: list[str] = Field(default_factory=list)
+    generation_time: float = 0.0                  # Latency in seconds

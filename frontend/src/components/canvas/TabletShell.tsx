@@ -30,6 +30,7 @@ import { useCanvasStore } from "@/store/canvasStore";
 import { PAGE_PRESET_SIZES, type CanvasTool } from "@/types/canvas";
 
 import { ResultPanel } from "../result/ResultPanel";
+import { SketchCanvas } from "./SketchCanvas";
 
 const TOOLS: Array<{
   id: CanvasTool;
@@ -67,9 +68,16 @@ const pagePresets = Object.entries(PAGE_PRESET_SIZES) as Array<
 interface TabletShellProps {
   canvas: UseCanvasReturn;
   loadingSketch: boolean;
+  handleGenerate: () => void;
+  aiLoading: boolean;
 }
 
-export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
+export function TabletShell({
+  canvas,
+  loadingSketch,
+  handleGenerate,
+  aiLoading,
+}: TabletShellProps) {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
@@ -102,6 +110,7 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
   function handleSaveSketch() {
     const canvasEl = document.querySelector("canvas");
     if (!canvasEl) return;
+
     const dataUrl = canvasEl.toDataURL("image/png");
     const base64 = dataUrl.split(",")[1];
 
@@ -250,7 +259,7 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
         </aside>
 
         {/* Canvas area */}
-        <main className="relative flex-1 overflow-hidden">
+        <main className="relative flex-1 overflow-hidden bg-[var(--background)]">
           {/* Floating brush + page strip */}
           <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-4">
             <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[color:var(--panel)]/92 px-3 py-2 shadow-lg backdrop-blur-xl">
@@ -322,24 +331,16 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
           </div>
 
           {/* Canvas viewport */}
-          <div className="absolute inset-0 flex items-center justify-center overflow-auto p-4 pt-20">
-            <div
-              ref={canvas.surfaceRef}
-              className="canvas-surface relative w-full max-w-full overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--canvas)] shadow-[0_30px_80px_rgba(15,23,42,0.18)]"
-              style={{ aspectRatio: `${pageWidth} / ${pageHeight}` }}
-            >
-              <canvas
-                ref={canvas.canvasRef}
-                className="block"
-                role="img"
-                aria-label={`Drawing canvas, ${pagePreset} ${pageWidth} by ${pageHeight}`}
-                tabIndex={0}
-              />
-            </div>
+          <div className="absolute inset-0 flex flex-col p-4 pt-20">
+            <SketchCanvas
+              surfaceRef={canvas.surfaceRef}
+              canvasRef={canvas.canvasRef}
+              loadTemplate={canvas.loadTemplate}
+            />
           </div>
 
           {loadingSketch && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--panel)]/80 backdrop-blur-sm">
+            <div className="absolute inset-0 z-30 flex items-center justify-center bg-[var(--panel)]/80 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-3">
                 <Loader2
                   size={32}
@@ -416,7 +417,11 @@ export function TabletShell({ canvas, loadingSketch }: TabletShellProps) {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-4">
-            <ResultPanel />
+            <ResultPanel
+              handleGenerate={handleGenerate}
+              aiLoading={aiLoading}
+              onClose={() => setAiPanelOpen(false)}
+            />
           </div>
         </aside>
       </div>

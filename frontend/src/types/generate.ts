@@ -26,4 +26,6 @@ export interface GenerateResponse {
   scene_description?: string;
   confidence?: number;
   needs_hint?: boolean;
+  detected_objects?: string[];
+  generation_time?: number;
 }
