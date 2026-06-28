@@ -21,7 +21,9 @@ import {
   Sparkles,
   Trash2,
   Wrench,
+  Brush,
 } from "lucide-react";
+import Link from "next/link";
 
 import type { UseCanvasReturn } from "@/hooks/useCanvas";
 import { useAuth } from "@/hooks/useAuth";

@@ -60,6 +60,16 @@ function GalleryContent() {
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1400px]">
+        {/* Back navigation button */}
+        <div className="mb-6 flex">
+          <Link
+            href="/canvas"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--panel)] px-4.5 py-2 text-xs font-bold text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
+          >
+            ← Back to Canvas Studio
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
