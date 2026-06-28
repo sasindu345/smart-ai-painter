@@ -36,7 +36,7 @@ export function TopBar() {
       <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color:var(--panel)]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-5 sm:py-4">
           <Link href="/" className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 text-white shadow-lg sm:h-11 sm:w-11 sm:rounded-2xl">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg shadow-black/15 sm:h-11 sm:w-11 sm:rounded-2xl">
               <Brush size={18} />
             </div>
             <div className="min-w-0">

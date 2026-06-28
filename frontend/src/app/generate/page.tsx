@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Download, Loader2, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 

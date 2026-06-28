@@ -21,7 +21,9 @@ import {
   Trash2,
   ZoomIn,
   ZoomOut,
+  Brush,
 } from "lucide-react";
+import Link from "next/link";
 
 import type { UseCanvasReturn } from "@/hooks/useCanvas";
 import { useAuth } from "@/hooks/useAuth";
@@ -173,6 +175,21 @@ export function TabletShell({
             icon={Trash2}
             tone="danger"
           />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/gallery"
+            className="inline-flex h-9 items-center rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] px-3.5 text-xs font-bold text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition shadow-sm"
+          >
+            Gallery
+          </Link>
+          <Link
+            href="/generate"
+            className="inline-flex h-9 items-center rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] px-3.5 text-xs font-bold text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition shadow-sm"
+          >
+            Generations
+          </Link>
         </div>
 
         <span className="text-xs font-medium text-[var(--muted-foreground)]">
@@ -335,7 +352,6 @@ export function TabletShell({
             <SketchCanvas
               surfaceRef={canvas.surfaceRef}
               canvasRef={canvas.canvasRef}
-              loadTemplate={canvas.loadTemplate}
             />
           </div>
 

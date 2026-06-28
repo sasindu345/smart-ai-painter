@@ -147,12 +147,30 @@ export function MobilePhoneShell({
 
   return (
     <div className="flex flex-1 flex-col">
+      {/* Mobile Header Bar */}
+      <header className="z-20 flex h-14 items-center justify-between border-b border-[var(--border)] bg-[color:var(--panel)]/95 px-4 backdrop-blur-xl shrink-0">
+        <Link
+          href="/gallery"
+          className="inline-flex h-9 items-center rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] px-3.5 text-xs font-bold text-[var(--foreground)] transition active:scale-95 shadow-sm"
+        >
+          Gallery
+        </Link>
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm">
+          <Brush size={16} />
+        </div>
+        <Link
+          href="/generate"
+          className="inline-flex h-9 items-center rounded-xl border border-[var(--border)] bg-[var(--panel-elevated)] px-3.5 text-xs font-bold text-[var(--foreground)] transition active:scale-95 shadow-sm"
+        >
+          Generations
+        </Link>
+      </header>
+
       {/* Canvas — takes all remaining space */}
       <main className="relative flex-1 overflow-hidden p-1.5 flex flex-col">
         <SketchCanvas
           surfaceRef={canvas.surfaceRef}
           canvasRef={canvas.canvasRef}
-          loadTemplate={canvas.loadTemplate}
         />
         {loadingSketch && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-[var(--panel)]/80 backdrop-blur-sm">

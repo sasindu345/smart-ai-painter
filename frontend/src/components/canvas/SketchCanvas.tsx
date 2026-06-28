@@ -26,14 +26,9 @@ import { VariationThumbs } from "../result/VariationThumbs";
 type SketchCanvasProps = {
   surfaceRef: RefObject<HTMLDivElement>;
   canvasRef: RefObject<HTMLCanvasElement>;
-  loadTemplate?: (type: "face" | "house" | "tree") => void;
 };
 
-export function SketchCanvas({
-  surfaceRef,
-  canvasRef,
-  loadTemplate,
-}: SketchCanvasProps) {
+export function SketchCanvas({ surfaceRef, canvasRef }: SketchCanvasProps) {
   const pagePreset = useCanvasStore((state) => state.pagePreset);
   const pageWidth = useCanvasStore((state) => state.pageWidth);
   const pageHeight = useCanvasStore((state) => state.pageHeight);

@@ -33,9 +33,7 @@ type CanvasTopBarProps = Pick<
   | "zoomIn"
   | "zoomOut"
   | "resetZoom"
-> & {
-  loadTemplate?: (type: "face" | "house" | "tree") => void;
-};
+>;
 
 const pagePresets = Object.entries(PAGE_PRESET_SIZES) as Array<
   [
@@ -64,7 +62,6 @@ export function CanvasTopBar({
   zoomIn,
   zoomOut,
   resetZoom,
-  loadTemplate,
 }: CanvasTopBarProps) {
   const activeTool = useCanvasStore((state) => state.activeTool);
   const brushColor = useCanvasStore((state) => state.brushColor);
@@ -188,35 +185,6 @@ export function CanvasTopBar({
               );
             })}
           </div>
-
-          {loadTemplate && (
-            <div className="flex items-center gap-1.5 rounded-xl bg-[var(--panel-elevated)] p-1 border border-[var(--border)]/45">
-              <span className="text-[9px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider px-2">
-                Templates:
-              </span>
-              <button
-                type="button"
-                onClick={() => loadTemplate("face")}
-                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--panel)] transition-all"
-              >
-                😀 Face
-              </button>
-              <button
-                type="button"
-                onClick={() => loadTemplate("house")}
-                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--panel)] transition-all"
-              >
-                🏠 House
-              </button>
-              <button
-                type="button"
-                onClick={() => loadTemplate("tree")}
-                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--panel)] transition-all"
-              >
-                🌲 Tree
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Right: save, shortcuts, AI */}
